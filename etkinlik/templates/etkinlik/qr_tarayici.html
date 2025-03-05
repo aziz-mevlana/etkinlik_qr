@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Kod Tarayıcı</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{% static 'etkinlik/css/qr_tarayici.css' %}">
+</head>
+<body>
+  <div id="container" class="container mt-5">
+    <h2 class="text-center">QR Kod Tarayıcı</h2>
+    <div id="reader" class="mt-3"></div>
+    <div id="status" class="mt-3"></div>
+    <div id="owner" class="mt-3"></div>
+    <div id="cat-gif" style="display: none;" class="mt-3">
+      <img src="{% static 'etkinlik/giphy.gif' %}" alt="Kamera kapalı" class="img-fluid">
+    </div>
+  </div>
+  <script>
+    let html5QrCode;
+
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log(`QR kod okundu: ${decodedText}`);
+      document.getElementById("status").innerText = "Okundu";
+      document.getElementById("status").classList.remove("error");
+
+      // Extract ticket owner information from decodedText
+      let ticketInfo = decodedText.split(',');
+      let ownerName = ticketInfo[0].split(':')[1].trim();
+      let ownerMail = ticketInfo[1].split(':')[1].trim();
+
+      // Display ticket owner information
+      document.getElementById("owner").innerText = `Bilet sahibi: ${ownerName}, Numara: ${ownerMail}`;
+      document.getElementById("owner").classList.remove("error");
+
+      // Sunucuya veri göndermek için:
+      fetch("/qr-onayla/", {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": "{{ csrf_token }}"
+          },
+          body: JSON.stringify({ qr_data: decodedText })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === 'success') {
+              document.getElementById("owner").innerText = `Bilet sahibi: ${ownerName}, Numara: ${ownerMail}`;
+              document.getElementById("owner").classList.remove("error");
+              document.getElementById("cat-gif").style.display = "block";// Show the success GIF
+              document.getElementById("reader").style.display = "none"; // Hide the camera
+          } else {
+              document.getElementById("owner").innerText = `Hata: ${data.message}`;
+              document.getElementById("owner").classList.add("error");
+          }
+      })
+      .catch(error => {
+          console.error("Hata:", error);
+          document.getElementById("status").innerText = "Hata";
+          document.getElementById("status").classList.add("error");
+      });
+
+      // QR kod tarayıcıyı durdur
+      html5QrCode.stop().then(() => {
+        console.log("QR kod tarayıcı durduruldu");
+
+        // 2 saniye sonra QR kod tarayıcıyı yeniden başlat
+        setTimeout(() => {
+          document.getElementById("cat-gif").style.display = "none";// Hide the GIF
+          document.getElementById("reader").style.display = "block"; // Show the camera
+          html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            onScanSuccess,
+            onScanFailure
+          ).then(() => {
+            console.log("QR kod tarayıcı yeniden başlatıldı");
+          }).catch(err => {
+            console.error("QR kod tarayıcı yeniden başlatılamadı", err);
+          });
+        }, 2000);
+      }).catch(err => {
+        console.error("QR kod tarayıcı durdurulamadı", err);
+      });
+    }
+
+    function onScanFailure(error) {
+      console.warn(`QR kod okuma hatası: ${error}`);
+    }
+
+    // Kameraları al ve arka kamerayı kullan
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras && cameras.length) {
+        let cameraId = cameras[1] ? cameras[1].id : cameras[0].id;
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+          cameraId, 
+          { fps: 10, qrbox: 250 },
+          onScanSuccess,
+          onScanFailure
+        );
+      } else {
+        console.error("Kamera bulunamadı.");
+        document.getElementById("status").innerText = "Kamera bulunamadı.";
+        document.getElementById("status").classList.add("error");
+        document.getElementById("cat-gif").style.display = "block"; // Show the cat GIF
+      }
+    }).catch(err => {
+      console.error("Kamera bulunamadı.", err);
+      document.getElementById("status").innerText = "Kamera bulunamadı.";
+      document.getElementById("status").classList.add("error");
+      document.getElementById("cat-gif").style.display = "block";
+    });
+  </script>
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
