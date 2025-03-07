@@ -2,7 +2,7 @@ import io, base64, qrcode, uuid
 import json
 from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
-from .models import Ticket
+from .models import Ticket, CheckIn
 from django.shortcuts import render, get_object_or_404
 from .forms import KatilimForm
 from django.urls import reverse
@@ -17,11 +17,11 @@ def etkinlik_katilim(request):
             data = form.cleaned_data
             # Kullanıcının zaten bir bileti olup olmadığını kontrol et
             try:
-                ticket = Ticket.objects.get(name=data['name'], email=data['email'], student_id=data['student_id'], department=data['department'])
+                ticket = Ticket.objects.get(name=data['name'], student_id=data['student_id'], department=data['department'])
                 qr_data = ticket.qr_code
             except Ticket.DoesNotExist:
                 unique_id = str(uuid.uuid4())
-                qr_data = f"Ad: {data['name']}, E-posta: {data['email']}, Öğrenci-Numarası: {data['student_id']}, Bölüm: {data['department']}, ID: {unique_id}"
+                qr_data = f"Ad: {data['name']}, Öğrenci-Numarası: {data['student_id']}, Bölüm: {data['department']}, ID: {unique_id}"
                 
                 qr = qrcode.QRCode(
                     version=1,
@@ -40,7 +40,7 @@ def etkinlik_katilim(request):
                 qr_img = img_base64
                 
                 # Bilet bilgilerini kaydet
-                Ticket.objects.create(name=data['name'], email=data['email'], student_id=data['student_id'], department=data['department'], qr_code=qr_data)
+                Ticket.objects.create(name=data['name'], student_id=data['student_id'], department=data['department'], qr_code=qr_data)
             else:
                 # Mevcut QR kodunu base64 formatına çevir
                 qr = qrcode.QRCode(
@@ -81,8 +81,14 @@ def qr_kod_onayla(request):
             
             # Katılım onaylama işlemi
             ticket.is_joined = True
-            ticket.entry_date = timezone.now()
+            current_time = timezone.now()
+            if ticket.entry_date is None:
+                ticket.entry_date = current_time
+            else:
+                CheckIn.objects.create(ticket=ticket, check_date=current_time)
+                ticket.leave_date = current_time
             ticket.save()
+            
             return JsonResponse({'status': 'success'})
         except Ticket.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Geçersiz QR kod.'})
@@ -102,11 +108,10 @@ def katilimci_listesi(request):
 def katilimci_ekle(request):
     if request.method == "POST":
         name = request.POST.get("name")
-        email = request.POST.get("email")
         student_id = request.POST.get("student_id")
         entry_date = timezone.now()
-        if name and email:
-            Ticket.objects.create(name=name, email=email, student_id=student_id, qr_code="")
+        if name and student_id:
+            Ticket.objects.create(name=name, student_id=student_id, qr_code="")
     return HttpResponseRedirect(reverse("katilimci_listesi"))
 
 def katilimci_sil(request, ticket_id):
