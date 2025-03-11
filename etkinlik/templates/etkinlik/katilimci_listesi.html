@@ -19,7 +19,7 @@
                     <th>Bölüm</th>
                     <th>Giriş</th>
                     <th>Çıkış</th>
-                    <th>İşlem</th>
+                    <th>Sil</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,7 +33,7 @@
                         <td>
                             <form method="post" action="{% url 'katilimci_sil' ticket.id %}">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-danger">Sil</button>
+                                <button type="submit" class="btn btn-danger">-</button>
                             </form>
                         </td>
                     </tr>
@@ -48,7 +48,7 @@
                     <th>Numarası</th>
                     <th>Bölüm</th>
                     <th>Sil</th>
-                    <th>Katıldı</th>
+                    <th>Ekle</th>
                 </tr>
             </thead>
             <tbody>
@@ -60,13 +60,13 @@
                         <td>
                             <form method="post" action="{% url 'katilimci_sil' ticket.id %}">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-danger">Sil</button>
+                                <button type="submit" class="btn btn-danger">-</button>
                             </form>
                         </td>
                         <td>
                             <form method="post" action="{% url 'katilimci_katildi' ticket.id %}">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-success">Ekle</button>
+                                <button type="submit" class="btn btn-success">+</button>
                             </form>
                         </td>
                     </tr>

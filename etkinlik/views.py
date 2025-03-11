@@ -2,12 +2,11 @@ import io, base64, qrcode, uuid
 import json
 from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
-from .models import Ticket, CheckIn
+from .models import Ticket
 from django.shortcuts import render, get_object_or_404
 from .forms import KatilimForm
 from django.urls import reverse
 from django.utils import timezone
-
 
 def etkinlik_katilim(request):
     qr_img = None
@@ -66,7 +65,6 @@ def etkinlik_katilim(request):
             
     return render(request, "etkinlik/katilim_form.html", {"form": form, "qr_img": qr_img})
 
-
 def qr_kod_onayla(request):
     if request.method == 'POST':
         try:
@@ -87,6 +85,31 @@ def qr_kod_onayla(request):
             else:
                 CheckIn.objects.create(ticket=ticket, check_date=current_time)
                 ticket.leave_date = current_time
+            ticket.save()
+            
+            return JsonResponse({'status': 'success'})
+        except Ticket.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Geçersiz QR kod.'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    
+    return JsonResponse({'status': 'error', 'message': 'Yalnızca POST isteği kabul edilir.'})
+
+def qr_cikis_onayla(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            qr_data = data.get('qr_data')
+            
+            # Veritabanında QR kodu eşleşen bileti bulmaya çalışıyoruz.
+            ticket = Ticket.objects.get(qr_code=qr_data)
+            
+            if not ticket.is_joined:
+                return JsonResponse({'status': 'error', 'message': 'Bu bilet henüz kullanılmamış.'})
+            
+            # Çıkış onaylama işlemi
+            current_time = timezone.now()
+            ticket.leave_date = current_time
             ticket.save()
             
             return JsonResponse({'status': 'success'})

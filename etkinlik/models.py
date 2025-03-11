@@ -25,10 +25,3 @@ class Ticket(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.student_id} - {self.department}"
-
-class CheckIn(models.Model):
-    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
-    check_date = models.DateTimeField(auto_now_add=True)  # QR kodunun okutulduğu tarih ve saat
-
-    def __str__(self):
-        return f"{self.ticket.name} - {self.check_date}"
