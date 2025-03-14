@@ -83,8 +83,7 @@ def qr_kod_onayla(request):
             if ticket.entry_date is None:
                 ticket.entry_date = current_time
             else:
-                CheckIn.objects.create(ticket=ticket, check_date=current_time)
-                ticket.leave_date = current_time
+                pass
             ticket.save()
             
             return JsonResponse({'status': 'success'})
@@ -126,15 +125,14 @@ def qr_tarayici(request):
 def katilimci_listesi(request):
     katilanlar = Ticket.objects.filter(is_joined=True)
     katilmayanlar = Ticket.objects.filter(is_joined=False)
-    return render(request, "etkinlik/katilimci_listesi.html", {"katilanlar": katilanlar, "katilmayanlar": katilmayanlar})
+    return render(request, "etkinlik/katilimci_listesi.html", {"katilanlar": katilanlar, "katilmayanlar": katilmayanlar, "form": KatilimForm()})
 
 def katilimci_ekle(request):
     if request.method == "POST":
-        name = request.POST.get("name")
-        student_id = request.POST.get("student_id")
-        entry_date = timezone.now()
-        if name and student_id:
-            Ticket.objects.create(name=name, student_id=student_id, qr_code="")
+        form = KatilimForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            Ticket.objects.create(name=data['name'], student_id=data['student_id'], department=data['department'], qr_code="")
     return HttpResponseRedirect(reverse("katilimci_listesi"))
 
 def katilimci_sil(request, ticket_id):
