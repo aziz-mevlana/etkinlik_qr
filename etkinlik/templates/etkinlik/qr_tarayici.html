@@ -1,15 +1,17 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QR Kod Tarayıcı</title>
   <script src="{% static 'etkinlik/js/qr.min.js' %}"></script>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'etkinlik/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'etkinlik/css/all.min.css' %}">
   <link rel="stylesheet" href="{% static 'etkinlik/css/qr_tarayici.css' %}">
 </head>
+
 <body>
   <div class="app-container">
     <div class="app-header">
@@ -25,9 +27,9 @@
           <i class="fas fa-sign-out-alt mr-2"></i>Çıkış
         </button>
       </div>
-      
+
       <div id="reader"></div>
-      
+
       <div id="status-display" class="status-container" style="display: none;">
         <div id="status-icon-success" class="icon-container" style="display: none;">
           <i class="fas fa-check-circle status-icon success-icon"></i>
@@ -38,18 +40,18 @@
         <div id="status" class="status-text"></div>
         <div id="owner" class="owner-text"></div>
       </div>
-      
+
       <div id="cat-gif" class="gif-container" style="display: none;">
-        <img src="{% static 'etkinlik/giphy.gif' %}" alt="Kamera kapalı" class="img-fluid">
+        <img src="{% static 'etkinlik/img/giphy.gif' %}" alt="Kamera kapalı" class="img-fluid">
       </div>
     </div>
   </div>
-  
+
   <script>
     let html5QrCode;
     let mode = 'entry'; // Default mode is entry
 
-    document.getElementById('entry-button').addEventListener('click', function() {
+    document.getElementById('entry-button').addEventListener('click', function () {
       mode = 'entry';
       this.classList.add('active', 'btn-primary');
       this.classList.remove('btn-secondary');
@@ -57,7 +59,7 @@
       document.getElementById('exit-button').classList.add('btn-secondary');
     });
 
-    document.getElementById('exit-button').addEventListener('click', function() {
+    document.getElementById('exit-button').addEventListener('click', function () {
       mode = 'exit';
       this.classList.add('active', 'btn-primary');
       this.classList.remove('btn-secondary');
@@ -67,7 +69,7 @@
 
     function onScanSuccess(decodedText, decodedResult) {
       console.log(`QR kod okundu: ${decodedText}`);
-      
+
       // Extract ticket owner information from decodedText
       let ticketInfo = decodedText.split(',');
       let ownerName = ticketInfo[0].split(':')[1].trim();
@@ -76,7 +78,7 @@
       // Show status container
       document.getElementById("status-display").style.display = "block";
       document.getElementById("status").innerText = "İşleniyor...";
-      
+
       // Hide success/error icons initially
       document.getElementById("status-icon-success").style.display = "none";
       document.getElementById("status-icon-error").style.display = "none";
@@ -86,33 +88,33 @@
 
       // Sunucuya veri göndermek için:
       fetch(url, {
-          method: "POST",
-          headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": "{{ csrf_token }}"
-          },
-          body: JSON.stringify({ qr_data: decodedText })
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ qr_data: decodedText })
       })
-      .then(response => response.json())
-      .then(data => {
+        .then(response => response.json())
+        .then(data => {
           if (data.status === 'success') {
-              document.getElementById("status-icon-success").style.display = "block";
-              document.getElementById("status").innerText = mode === 'entry' ? "Giriş Başarılı" : "Çıkış Başarılı";
-              document.getElementById("owner").innerText = `${ownerName}, ${ownerMail}`;
-              document.getElementById("cat-gif").style.display = "block";
-              document.getElementById("reader").style.display = "none";
+            document.getElementById("status-icon-success").style.display = "block";
+            document.getElementById("status").innerText = mode === 'entry' ? "Giriş Başarılı" : "Çıkış Başarılı";
+            document.getElementById("owner").innerText = `${ownerName}, ${ownerMail}`;
+            document.getElementById("cat-gif").style.display = "block";
+            document.getElementById("reader").style.display = "none";
           } else {
-              document.getElementById("status-icon-error").style.display = "block";
-              document.getElementById("status").innerText = "İşlem Başarısız";
-              document.getElementById("owner").innerText = `Hata: ${data.message}`;
+            document.getElementById("status-icon-error").style.display = "block";
+            document.getElementById("status").innerText = "İşlem Başarısız";
+            document.getElementById("owner").innerText = `Hata: ${data.message}`;
           }
-      })
-      .catch(error => {
+        })
+        .catch(error => {
           console.error("Hata:", error);
           document.getElementById("status-icon-error").style.display = "block";
           document.getElementById("status").innerText = "Bağlantı Hatası";
           document.getElementById("owner").innerText = "Sunucuya bağlanırken bir hata oluştu.";
-      });
+        });
 
       // QR kod tarayıcıyı durdur
       html5QrCode.stop().then(() => {
@@ -123,7 +125,7 @@
           document.getElementById("cat-gif").style.display = "none";
           document.getElementById("reader").style.display = "block";
           document.getElementById("status-display").style.display = "none";
-          
+
           html5QrCode.start(
             { facingMode: "environment" },
             { fps: 10, qrbox: 250 },
@@ -150,7 +152,7 @@
         let cameraId = cameras[1] ? cameras[1].id : cameras[0].id;
         html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
-          cameraId, 
+          cameraId,
           { fps: 10, qrbox: 250 },
           onScanSuccess,
           onScanFailure
@@ -172,8 +174,9 @@
       document.getElementById("cat-gif").style.display = "block";
     });
   </script>
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="{% static 'etkinlik/js/slim.min.js' %}"></script>
+  <script src="{% static 'etkinlik/js/popper.min.js' %}"></script>
+  <script src="{% static 'etkinlik/js/bootstrap.min.js' %}"></script>
 </body>
+
 </html>
