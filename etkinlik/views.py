@@ -8,6 +8,13 @@ from .forms import KatilimForm
 from django.urls import reverse
 from django.utils import timezone
 
+def login_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return HttpResponseRedirect('/admin/login/?next=' + request.path)
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
 def etkinlik_katilim(request):
     qr_img = None
     if request.method == "POST":
@@ -65,6 +72,7 @@ def etkinlik_katilim(request):
             
     return render(request, "etkinlik/katilim_form.html", {"form": form, "qr_img": qr_img})
 
+@login_required
 def qr_kod_onayla(request):
     if request.method == 'POST':
         try:
@@ -94,6 +102,7 @@ def qr_kod_onayla(request):
     
     return JsonResponse({'status': 'error', 'message': 'Yalnızca POST isteği kabul edilir.'})
 
+@login_required
 def qr_cikis_onayla(request):
     if request.method == 'POST':
         try:
@@ -119,14 +128,18 @@ def qr_cikis_onayla(request):
     
     return JsonResponse({'status': 'error', 'message': 'Yalnızca POST isteği kabul edilir.'})
 
+@login_required
 def qr_tarayici(request):
     return render(request, "etkinlik/qr_tarayici.html")
 
+@login_required
 def katilimci_listesi(request):
     katilanlar = Ticket.objects.filter(is_joined=True)
     katilmayanlar = Ticket.objects.filter(is_joined=False)
-    return render(request, "etkinlik/katilimci_listesi.html", {"katilanlar": katilanlar, "katilmayanlar": katilmayanlar, "form": KatilimForm()})
+    toplam_katilimci = (katilanlar.count() + katilmayanlar.count())
+    return render(request, "etkinlik/katilimci_listesi.html", {"katilanlar": katilanlar, "katilmayanlar": katilmayanlar, "toplam_katilimci":toplam_katilimci, "form": KatilimForm()})
 
+@login_required
 def katilimci_ekle(request):
     if request.method == "POST":
         form = KatilimForm(request.POST)
@@ -135,14 +148,18 @@ def katilimci_ekle(request):
             Ticket.objects.create(name=data['name'], student_id=data['student_id'], department=data['department'], qr_code="")
     return HttpResponseRedirect(reverse("katilimci_listesi"))
 
+@login_required
 def katilimci_sil(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     ticket.delete()
     return HttpResponseRedirect(reverse("katilimci_listesi"))
 
+@login_required
 def katilimci_katildi(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     ticket.is_joined = True
     ticket.entry_date = timezone.now()
     ticket.save()
     return HttpResponseRedirect(reverse("katilimci_listesi"))
+
+

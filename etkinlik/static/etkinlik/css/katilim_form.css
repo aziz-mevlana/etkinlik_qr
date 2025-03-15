@@ -1,44 +1,105 @@
 body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
     display: flex;
-    justify-content: center;
     align-items: center;
-    min-height: 90vh;
-    background-color: #f0f0f0;
-    font-family: Arial, sans-serif;
-    margin: 0;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-#container {
-    text-align: center;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+.card {
+    border-radius: 15px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: none;
+    max-width: 500px;
     width: 100%;
-    max-width: 600px;
-    height: 100%;
+    margin: 2rem auto;
 }
-h2 {
-    color: #333;
-    font-size: 2em;
+
+.card-header {
+    background: linear-gradient(45deg, #3a7bd5, #00d2ff);
+    color: white;
+    border-bottom: none;
+    padding: 1.5rem;
+    text-align: center;
 }
-h3 {
-    margin-top: 20px;
-    color: #333;
+
+.card-header h3 {
+    margin: 0;
+    font-weight: 600;
 }
-img {
-    margin-top: 10px;
-    border: 1px solid #ddd;
+
+.card-body {
+    padding: 2rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #555;
+}
+
+.btn-submit {
+    background: linear-gradient(45deg, #3a7bd5, #00d2ff);
+    border: none;
+    width: 100%;
+    padding: 0.75rem;
+    font-weight: 600;
+    margin-top: 1rem;
     border-radius: 5px;
-    padding: 5px;
-    background-color: #fff;
-    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.btn-submit:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.qr-section {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.qr-section h4 {
+    margin-bottom: 1rem;
+    color: #3a7bd5;
+}
+
+.qr-img {
+    max-width: 200px;
+    margin: 0 auto;
+    padding: 0.5rem;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.form-control {
+    border-radius: 5px;
+    padding: 0.75rem;
+    height: auto;
 }
 @media (max-width: 600px) {
-    #container {
-        width: 100%;
-        padding: 10px;
+    .form-control {
+        height: calc(1.5em + .75rem + 2px);
     }
-    h2 {
-        font-size: 1.5em;
-    }
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-group-text {
+    background-color: #3a7bd5;
+    color: white;
+    border: none;
+}
+
+.logo-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: white;
 }
