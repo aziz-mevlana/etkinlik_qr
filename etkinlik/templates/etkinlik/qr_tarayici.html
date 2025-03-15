@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Kod Tarayıcı</title>
+  <script src="{% static 'etkinlik/js/qr.min.js' %}"></script>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'etkinlik/css/qr_tarayici.css' %}">
+</head>
+<body>
+  <div class="app-container">
+    <div class="app-header">
+      <i class="fas fa-qrcode mb-2" style="font-size: 2.5rem;"></i>
+      <h2>QR Kod Tarayıcı</h2>
+    </div>
+    <div class="scanner-container">
+      <div class="mode-selector">
+        <button id="entry-button" class="btn btn-primary mode-btn active">
+          <i class="fas fa-sign-in-alt mr-2"></i>Giriş
+        </button>
+        <button id="exit-button" class="btn btn-secondary mode-btn">
+          <i class="fas fa-sign-out-alt mr-2"></i>Çıkış
+        </button>
+      </div>
+      
+      <div id="reader"></div>
+      
+      <div id="status-display" class="status-container" style="display: none;">
+        <div id="status-icon-success" class="icon-container" style="display: none;">
+          <i class="fas fa-check-circle status-icon success-icon"></i>
+        </div>
+        <div id="status-icon-error" class="icon-container" style="display: none;">
+          <i class="fas fa-times-circle status-icon error-icon"></i>
+        </div>
+        <div id="status" class="status-text"></div>
+        <div id="owner" class="owner-text"></div>
+      </div>
+      
+      <div id="cat-gif" class="gif-container" style="display: none;">
+        <img src="{% static 'etkinlik/giphy.gif' %}" alt="Kamera kapalı" class="img-fluid">
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let html5QrCode;
+    let mode = 'entry'; // Default mode is entry
+
+    document.getElementById('entry-button').addEventListener('click', function() {
+      mode = 'entry';
+      this.classList.add('active', 'btn-primary');
+      this.classList.remove('btn-secondary');
+      document.getElementById('exit-button').classList.remove('active', 'btn-primary');
+      document.getElementById('exit-button').classList.add('btn-secondary');
+    });
+
+    document.getElementById('exit-button').addEventListener('click', function() {
+      mode = 'exit';
+      this.classList.add('active', 'btn-primary');
+      this.classList.remove('btn-secondary');
+      document.getElementById('entry-button').classList.remove('active', 'btn-primary');
+      document.getElementById('entry-button').classList.add('btn-secondary');
+    });
+
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log(`QR kod okundu: ${decodedText}`);
+      
+      // Extract ticket owner information from decodedText
+      let ticketInfo = decodedText.split(',');
+      let ownerName = ticketInfo[0].split(':')[1].trim();
+      let ownerMail = ticketInfo[1].split(':')[1].trim();
+
+      // Show status container
+      document.getElementById("status-display").style.display = "block";
+      document.getElementById("status").innerText = "İşleniyor...";
+      
+      // Hide success/error icons initially
+      document.getElementById("status-icon-success").style.display = "none";
+      document.getElementById("status-icon-error").style.display = "none";
+
+      // Determine the URL based on the mode
+      let url = mode === 'entry' ? "/qr-onayla/" : "/qr-cikis-onayla/";
+
+      // Sunucuya veri göndermek için:
+      fetch(url, {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": "{{ csrf_token }}"
+          },
+          body: JSON.stringify({ qr_data: decodedText })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === 'success') {
+              document.getElementById("status-icon-success").style.display = "block";
+              document.getElementById("status").innerText = mode === 'entry' ? "Giriş Başarılı" : "Çıkış Başarılı";
+              document.getElementById("owner").innerText = `${ownerName}, ${ownerMail}`;
+              document.getElementById("cat-gif").style.display = "block";
+              document.getElementById("reader").style.display = "none";
+          } else {
+              document.getElementById("status-icon-error").style.display = "block";
+              document.getElementById("status").innerText = "İşlem Başarısız";
+              document.getElementById("owner").innerText = `Hata: ${data.message}`;
+          }
+      })
+      .catch(error => {
+          console.error("Hata:", error);
+          document.getElementById("status-icon-error").style.display = "block";
+          document.getElementById("status").innerText = "Bağlantı Hatası";
+          document.getElementById("owner").innerText = "Sunucuya bağlanırken bir hata oluştu.";
+      });
+
+      // QR kod tarayıcıyı durdur
+      html5QrCode.stop().then(() => {
+        console.log("QR kod tarayıcı durduruldu");
+
+        // 3 saniye sonra QR kod tarayıcıyı yeniden başlat
+        setTimeout(() => {
+          document.getElementById("cat-gif").style.display = "none";
+          document.getElementById("reader").style.display = "block";
+          document.getElementById("status-display").style.display = "none";
+          
+          html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            onScanSuccess,
+            onScanFailure
+          ).then(() => {
+            console.log("QR kod tarayıcı yeniden başlatıldı");
+          }).catch(err => {
+            console.error("QR kod tarayıcı yeniden başlatılamadı", err);
+          });
+        }, 3000);
+      }).catch(err => {
+        console.error("QR kod tarayıcı durdurulamadı", err);
+      });
+    }
+
+    function onScanFailure(error) {
+      console.warn(`QR kod okuma hatası: ${error}`);
+    }
+
+    // Kameraları al ve arka kamerayı kullan
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras && cameras.length) {
+        let cameraId = cameras[1] ? cameras[1].id : cameras[0].id;
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+          cameraId, 
+          { fps: 10, qrbox: 250 },
+          onScanSuccess,
+          onScanFailure
+        );
+      } else {
+        console.error("Kamera bulunamadı.");
+        document.getElementById("status-display").style.display = "block";
+        document.getElementById("status-icon-error").style.display = "block";
+        document.getElementById("status").innerText = "Kamera Bulunamadı";
+        document.getElementById("owner").innerText = "Lütfen kamera izinlerini kontrol edin.";
+        document.getElementById("cat-gif").style.display = "block";
+      }
+    }).catch(err => {
+      console.error("Kamera bulunamadı.", err);
+      document.getElementById("status-display").style.display = "block";
+      document.getElementById("status-icon-error").style.display = "block";
+      document.getElementById("status").innerText = "Kamera Erişimi Reddedildi";
+      document.getElementById("owner").innerText = "Lütfen kamera izinlerini kontrol edin.";
+      document.getElementById("cat-gif").style.display = "block";
+    });
+  </script>
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
