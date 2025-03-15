@@ -1,7 +1,3 @@
-# Admin giriş
-lisa
-1234
-
 # Etkinlik Katılım Sistemi
 
 Bu proje, etkinlik katılımcılarını yönetmek için bir Django tabanlı web uygulamasıdır. Kullanıcılar etkinliklere katılım sağlayabilir, QR kodları oluşturabilir ve katılımcı listelerini yönetebilirler.
@@ -54,6 +50,11 @@ Bu proje, etkinlik katılımcılarını yönetmek için bir Django tabanlı web 
     ```
 
 6. Tarayıcınızda `http://127.0.0.1:8000/` adresine gidin.
+
+7. Yönetici paneline erişmek için superadmin hesabı oluşturun
+    ```bash
+    python manage.py createsuperuser
+    ```
 
 ## Kullanım
 
