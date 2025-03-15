@@ -1,0 +1,57 @@
+# Python dosya türleri
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django ile ilgili
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+static/
+
+# Sanal ortam klasörleri
+venv/
+ENV/
+env/
+.env
+.venv
+
+# IDE/Editör klasörleri
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Django'nun cache dosyaları
+__pycache__/
+*.py[cod]
+
+# Coverage ve test dosyaları
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
