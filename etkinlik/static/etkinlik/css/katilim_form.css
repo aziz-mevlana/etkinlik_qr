@@ -80,26 +80,70 @@ body {
 .form-control {
     border-radius: 5px;
     padding: 0.75rem;
-    height: auto;
-}
-@media (max-width: 600px) {
-    .form-control {
-        height: calc(1.5em + .75rem + 2px);
-    }
+    height: 45px;
+    font-size: 1rem;
 }
 
 .input-group {
     margin-bottom: 1.5rem;
+    height: 45px;
 }
 
 .input-group-text {
     background-color: #3a7bd5;
     color: white;
     border: none;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-group-text i {
+    font-size: 1.2rem;
 }
 
 .logo-icon {
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
     color: white;
+}
+.gorevli-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    opacity: 0.3;
+    transition: opacity 0.3s;
+    z-index: 1000;
+}
+.gorevli-btn:hover {
+    opacity: 1;
+}
+.footer {
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 30px;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+.footer a {
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+.footer a:hover {
+    color: #0056b3;
+}
+.developer-name {
+    font-weight: 500;
+}
+.heart-icon {
+    color: #dc3545;
+    animation: heartbeat 1.5s infinite;
+}
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }

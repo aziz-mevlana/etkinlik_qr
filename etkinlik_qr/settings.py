@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-%b)@w1-el4s^8mngo$!-x9cc!!@v2vn61#q0g%8_x23ort!#b*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['tubit.org.tr', 'www.tubit.org.tr']
+ALLOWED_HOSTS = ['tubit.org.tr', 'www.tubit.org.tr', '127.0.0.1:8000', '127.0.0.1', '*']
 
 
 

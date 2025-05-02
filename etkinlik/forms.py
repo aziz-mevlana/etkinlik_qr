@@ -5,12 +5,12 @@ class KatilimForm(forms.Form):
     name = forms.CharField(
         max_length=100,
         label='Adınız',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Adınız'})
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'İsim Soyisim'})
     )
     student_id = forms.CharField(
         max_length=10,
         label='Öğrenci Numaranız',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Yoklama için gereklidir'})
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Öğrenci Numarası'})
     )
     department = forms.ChoiceField(
         choices=(

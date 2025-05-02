@@ -5,11 +5,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Kod Tarayıcı</title>
+  <title>QR Kod Tarayıcı</title>  
   <script src="{% static 'etkinlik/js/qr.min.js' %}"></script>
   <link rel="stylesheet" href="{% static 'etkinlik/css/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'etkinlik/css/all.min.css' %}">
   <link rel="stylesheet" href="{% static 'etkinlik/css/qr_tarayici.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
@@ -67,6 +68,38 @@
       document.getElementById('entry-button').classList.add('btn-secondary');
     });
 
+    // Konfeti efekti fonksiyonu
+    function triggerConfetti() {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+            });
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+            });
+        }, 250);
+    }
+
     function onScanSuccess(decodedText, decodedResult) {
       console.log(`QR kod okundu: ${decodedText}`);
 
@@ -84,7 +117,7 @@
       document.getElementById("status-icon-error").style.display = "none";
 
       // Determine the URL based on the mode
-      let url = mode === 'entry' ? "/qr-onayla/" : "/qr-cikis-onayla/";
+      let url = mode === 'entry' ? "/etkinlik/qr-onayla/" : "/etkinlik/qr-cikis-onayla/";
 
       // Sunucuya veri göndermek için:
       fetch(url, {
@@ -103,6 +136,9 @@
             document.getElementById("owner").innerText = `${ownerName}, ${ownerMail}`;
             document.getElementById("cat-gif").style.display = "block";
             document.getElementById("reader").style.display = "none";
+            
+            // Başarılı QR okuma durumunda konfeti efektini tetikle
+            triggerConfetti();
           } else {
             document.getElementById("status-icon-error").style.display = "block";
             document.getElementById("status").innerText = "İşlem Başarısız";

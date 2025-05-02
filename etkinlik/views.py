@@ -1,5 +1,6 @@
 import io, base64, qrcode, uuid
 import json
+import os
 from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 from .models import Ticket
@@ -7,6 +8,33 @@ from django.shortcuts import render, get_object_or_404
 from .forms import KatilimForm
 from django.urls import reverse
 from django.utils import timezone
+from datetime import datetime, timedelta
+from django.conf import settings
+
+def get_day_number():
+    # Etkinliğin başlangıç tarihi (6 Haziran 2024)
+    start_date = datetime(2024, 6, 6)
+    today = datetime.now()
+    day_diff = (today - start_date).days + 1
+    
+    # Eğer etkinlik günleri dışındaysa veya 3 günden fazlaysa None döndür
+    if day_diff < 1 or day_diff > 3:
+        return None
+    return day_diff
+
+def log_yoklama(ticket, is_entry):
+    day_number = get_day_number()
+    if day_number is None:
+        return  # Etkinlik günleri dışında log tutma
+    
+    log_dir = os.path.join(settings.BASE_DIR, 'etkinlik', 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # Gün numarasına göre dosya adı oluştur
+    log_file = os.path.join(log_dir, f'yoklama_log_gun_{day_number}.txt')
+    
+    with open(log_file, 'a', encoding='utf-8') as f:
+        f.write(f"{timezone.now()} - {ticket.name} - {ticket.student_id} - {ticket.department} - {'Giriş' if is_entry else 'Çıkış'}\n")
 
 def login_required(view_func):
     def wrapper(request, *args, **kwargs):
@@ -90,9 +118,10 @@ def qr_kod_onayla(request):
             current_time = timezone.now()
             if ticket.entry_date is None:
                 ticket.entry_date = current_time
-            else:
-                pass
             ticket.save()
+            
+            # Loglama işlemi
+            log_yoklama(ticket, is_entry=True)
             
             return JsonResponse({'status': 'success'})
         except Ticket.DoesNotExist:
@@ -119,6 +148,9 @@ def qr_cikis_onayla(request):
             current_time = timezone.now()
             ticket.leave_date = current_time
             ticket.save()
+            
+            # Loglama işlemi
+            log_yoklama(ticket, is_entry=False)
             
             return JsonResponse({'status': 'success'})
         except Ticket.DoesNotExist:
