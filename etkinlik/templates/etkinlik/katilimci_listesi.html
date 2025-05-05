@@ -37,6 +37,19 @@
                 </div>
             </div>
 
+            <!-- İşlem Butonları -->
+            <div class="action-buttons">
+                <a href="{% url 'csv_indir' %}" class="btn btn-success">
+                    <i class="fas fa-file-csv"></i> CSV İndir
+                </a>
+                <form method="post" action="{% url 'katilimcilari_sifirla' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('Tüm katılımcıların durumu sıfırlanacak. Emin misiniz?')">
+                        <i class="fas fa-redo"></i> Katılımcıları Sıfırla
+                    </button>
+                </form>
+            </div>
+
             <!-- Katılım Yapanlar Bölümü -->
             <div class="section-title">
                 <div class="icon"><i class="fas fa-user-check"></i></div>

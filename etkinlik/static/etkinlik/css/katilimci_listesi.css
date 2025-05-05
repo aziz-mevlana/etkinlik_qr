@@ -134,6 +134,27 @@ body {
     color: #333;
 }
 
+.action-buttons {
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.action-buttons .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.action-buttons .btn i {
+    font-size: 1.1rem;
+}
+
 @media (max-width: 767px) {
     .stats-row {
         flex-direction: column;

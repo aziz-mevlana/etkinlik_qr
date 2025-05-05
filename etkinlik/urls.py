@@ -10,4 +10,6 @@ urlpatterns = [
     path('katilimci-ekle/', views.katilimci_ekle, name='katilimci_ekle'),
     path('katilimci-sil/<int:ticket_id>/', views.katilimci_sil, name='katilimci_sil'),
     path('katilimci-katildi/<int:ticket_id>/', views.katilimci_katildi, name='katilimci_katildi'),
+    path('csv-indir/', views.csv_indir, name='csv_indir'),
+    path('katilimcilari-sifirla/', views.katilimcilari_sifirla, name='katilimcilari_sifirla'),
 ]

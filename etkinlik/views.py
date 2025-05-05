@@ -1,7 +1,8 @@
 import io, base64, qrcode, uuid
 import json
 import os
-from django.http import JsonResponse, HttpResponseRedirect
+import csv
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Ticket
 from django.shortcuts import render, get_object_or_404
@@ -10,6 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 
 def get_day_number():
     # Etkinliğin başlangıç tarihi (6 Haziran 2024)
@@ -110,14 +112,15 @@ def qr_kod_onayla(request):
             # Veritabanında QR kodu eşleşen bileti bulmaya çalışıyoruz.
             ticket = Ticket.objects.get(qr_code=qr_data)
             
-            if ticket.is_joined:
+            # Eğer kişi çıkış yapmışsa tekrar giriş yapabilir
+            if ticket.is_joined and ticket.leave_date is None:
                 return JsonResponse({'status': 'error', 'message': 'Bu bilet zaten kullanılmış.'})
             
             # Katılım onaylama işlemi
             ticket.is_joined = True
             current_time = timezone.now()
-            if ticket.entry_date is None:
-                ticket.entry_date = current_time
+            ticket.entry_date = current_time
+            ticket.leave_date = None  # Çıkış tarihini sıfırla
             ticket.save()
             
             # Loglama işlemi
@@ -143,6 +146,9 @@ def qr_cikis_onayla(request):
             
             if not ticket.is_joined:
                 return JsonResponse({'status': 'error', 'message': 'Bu bilet henüz kullanılmamış.'})
+            
+            if ticket.leave_date is not None:
+                return JsonResponse({'status': 'error', 'message': 'Bu bilet için zaten çıkış yapılmış.'})
             
             # Çıkış onaylama işlemi
             current_time = timezone.now()
@@ -170,6 +176,38 @@ def katilimci_listesi(request):
     katilmayanlar = Ticket.objects.filter(is_joined=False)
     toplam_katilimci = (katilanlar.count() + katilmayanlar.count())
     return render(request, "etkinlik/katilimci_listesi.html", {"katilanlar": katilanlar, "katilmayanlar": katilmayanlar, "toplam_katilimci":toplam_katilimci, "form": KatilimForm()})
+
+@login_required
+def csv_indir(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="katilimci_listesi.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Ad', 'Öğrenci Numarası', 'Bölüm', 'Giriş Tarihi', 'Çıkış Tarihi'])
+    
+    katilanlar = Ticket.objects.filter(is_joined=True)
+    for katilimci in katilanlar:
+        writer.writerow([
+            katilimci.name,
+            katilimci.student_id,
+            katilimci.get_department_display(),
+            katilimci.entry_date.strftime('%Y-%m-%d %H:%M:%S') if katilimci.entry_date else '-',
+            katilimci.leave_date.strftime('%Y-%m-%d %H:%M:%S') if katilimci.leave_date else '-'
+        ])
+    
+    return response
+
+@login_required
+def katilimcilari_sifirla(request):
+    if request.method == 'POST':
+        # Tüm katılımcıların katılım durumunu sıfırla
+        Ticket.objects.all().update(
+            is_joined=False,
+            entry_date=None,
+            leave_date=None
+        )
+        return HttpResponseRedirect(reverse("katilimci_listesi"))
+    return HttpResponseRedirect(reverse("katilimci_listesi"))
 
 @login_required
 def katilimci_ekle(request):
