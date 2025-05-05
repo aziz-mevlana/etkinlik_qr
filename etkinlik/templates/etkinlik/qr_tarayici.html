@@ -7,10 +7,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QR Kod Tarayıcı</title>  
   <script src="{% static 'etkinlik/js/qr.min.js' %}"></script>
+  <script src="{% static 'etkinlik/js/canvas-confetti.min.js' %}"></script>
   <link rel="stylesheet" href="{% static 'etkinlik/css/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'etkinlik/css/all.min.css' %}">
   <link rel="stylesheet" href="{% static 'etkinlik/css/qr_tarayici.css' %}">
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
@@ -45,12 +45,20 @@
       <div id="cat-gif" class="gif-container" style="display: none;">
         <img src="{% static 'etkinlik/img/giphy.gif' %}" alt="Kamera kapalı" class="img-fluid">
       </div>
+
+      <!-- Kamera Değiştirme Butonu -->
+      <button id="switch-camera" class="btn btn-info camera-switch-btn">
+        <i class="fas fa-camera"></i> Kamerayı Değiştir
+      </button>
     </div>
   </div>
 
   <script>
     let html5QrCode;
     let mode = 'entry'; // Default mode is entry
+    let currentCameraIndex = 0;
+    let cameras = [];
+    let isScannerRunning = false;
 
     document.getElementById('entry-button').addEventListener('click', function () {
       mode = 'entry';
@@ -162,16 +170,7 @@
           document.getElementById("reader").style.display = "block";
           document.getElementById("status-display").style.display = "none";
 
-          html5QrCode.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: 250 },
-            onScanSuccess,
-            onScanFailure
-          ).then(() => {
-            console.log("QR kod tarayıcı yeniden başlatıldı");
-          }).catch(err => {
-            console.error("QR kod tarayıcı yeniden başlatılamadı", err);
-          });
+          startScanner();
         }, 3000);
       }).catch(err => {
         console.error("QR kod tarayıcı durdurulamadı", err);
@@ -182,33 +181,75 @@
       console.warn(`QR kod okuma hatası: ${error}`);
     }
 
-    // Kameraları al ve arka kamerayı kullan
-    Html5Qrcode.getCameras().then(cameras => {
-      if (cameras && cameras.length) {
-        let cameraId = cameras[1] ? cameras[1].id : cameras[0].id;
-        html5QrCode = new Html5Qrcode("reader");
+    // Kamera değiştirme fonksiyonu
+    function switchCamera() {
+      if (cameras.length > 1) {
+        currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
+        startScanner();
+      }
+    }
+
+    // Scanner'ı başlatma fonksiyonu
+    function startScanner() {
+      if (html5QrCode) {
+        if (isScannerRunning) {
+          html5QrCode.stop().then(() => {
+            isScannerRunning = false;
+            startCamera();
+          }).catch(err => {
+            console.error("Scanner durdurulamadı", err);
+            isScannerRunning = false;
+          });
+        } else {
+          startCamera();
+        }
+      }
+    }
+
+    function startCamera() {
+      if (cameras && cameras.length > 0) {
         html5QrCode.start(
-          cameraId,
+          cameras[currentCameraIndex].id,
           { fps: 10, qrbox: 250 },
           onScanSuccess,
           onScanFailure
-        );
+        ).then(() => {
+          isScannerRunning = true;
+          console.log("Kamera başlatıldı");
+        }).catch(err => {
+          console.error("Kamera başlatılamadı", err);
+          showCameraError();
+        });
       } else {
-        console.error("Kamera bulunamadı.");
-        document.getElementById("status-display").style.display = "block";
-        document.getElementById("status-icon-error").style.display = "block";
-        document.getElementById("status").innerText = "Kamera Bulunamadı";
-        document.getElementById("owner").innerText = "Lütfen kamera izinlerini kontrol edin.";
-        document.getElementById("cat-gif").style.display = "block";
+        showCameraError();
       }
-    }).catch(err => {
-      console.error("Kamera bulunamadı.", err);
+    }
+
+    function showCameraError() {
       document.getElementById("status-display").style.display = "block";
       document.getElementById("status-icon-error").style.display = "block";
-      document.getElementById("status").innerText = "Kamera Erişimi Reddedildi";
-      document.getElementById("owner").innerText = "Lütfen kamera izinlerini kontrol edin.";
+      document.getElementById("status").innerText = "Kamera Erişimi Hatası";
+      document.getElementById("owner").innerText = "Lütfen kamera izinlerini kontrol edin ve sayfayı yenileyin.";
       document.getElementById("cat-gif").style.display = "block";
+      document.getElementById("reader").style.display = "none";
+    }
+
+    // Kameraları al ve başlat
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        cameras = devices;
+        html5QrCode = new Html5Qrcode("reader");
+        startScanner();
+      } else {
+        showCameraError();
+      }
+    }).catch(err => {
+      console.error("Kamera erişimi hatası:", err);
+      showCameraError();
     });
+
+    // Kamera değiştirme butonuna tıklama olayı
+    document.getElementById('switch-camera').addEventListener('click', switchCamera);
   </script>
   <script src="{% static 'etkinlik/js/slim.min.js' %}"></script>
   <script src="{% static 'etkinlik/js/popper.min.js' %}"></script>

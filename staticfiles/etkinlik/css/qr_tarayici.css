@@ -115,3 +115,27 @@ body {
   margin: 0 auto 1rem;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 }
+
+.camera-switch-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  border-radius: 30px;
+  background: linear-gradient(45deg, #3a7bd5, #00d2ff);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.camera-switch-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.camera-switch-btn i {
+  margin-right: 8px;
+}
