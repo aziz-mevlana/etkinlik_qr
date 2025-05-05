@@ -161,20 +161,26 @@
         });
 
       // QR kod tarayıcıyı durdur
-      html5QrCode.stop().then(() => {
-        console.log("QR kod tarayıcı durduruldu");
+      if (isScannerRunning) {
+        html5QrCode.stop().then(() => {
+          console.log("QR kod tarayıcı durduruldu");
+          isScannerRunning = false;
 
-        // 3 saniye sonra QR kod tarayıcıyı yeniden başlat
-        setTimeout(() => {
-          document.getElementById("cat-gif").style.display = "none";
-          document.getElementById("reader").style.display = "block";
-          document.getElementById("status-display").style.display = "none";
-
-          startScanner();
-        }, 3000);
-      }).catch(err => {
-        console.error("QR kod tarayıcı durdurulamadı", err);
-      });
+          // 3 saniye sonra QR kod tarayıcıyı yeniden başlat
+          setTimeout(() => {
+            document.getElementById("cat-gif").style.display = "none";
+            document.getElementById("reader").style.display = "block";
+            document.getElementById("status-display").style.display = "none";
+            
+            // Yeni bir Html5Qrcode örneği oluştur
+            html5QrCode = new Html5Qrcode("reader");
+            startScanner();
+          }, 3000);
+        }).catch(err => {
+          console.error("QR kod tarayıcı durdurulamadı", err);
+          isScannerRunning = false;
+        });
+      }
     }
 
     function onScanFailure(error) {
@@ -191,18 +197,20 @@
 
     // Scanner'ı başlatma fonksiyonu
     function startScanner() {
-      if (html5QrCode) {
-        if (isScannerRunning) {
-          html5QrCode.stop().then(() => {
-            isScannerRunning = false;
-            startCamera();
-          }).catch(err => {
-            console.error("Scanner durdurulamadı", err);
-            isScannerRunning = false;
-          });
-        } else {
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
+
+      if (isScannerRunning) {
+        html5QrCode.stop().then(() => {
+          isScannerRunning = false;
           startCamera();
-        }
+        }).catch(err => {
+          console.error("Scanner durdurulamadı", err);
+          isScannerRunning = false;
+        });
+      } else {
+        startCamera();
       }
     }
 
