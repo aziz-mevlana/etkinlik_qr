@@ -48,6 +48,12 @@
                         <i class="fas fa-redo"></i> Katılımcıları Sıfırla
                     </button>
                 </form>
+                <form method="post" action="{% url 'tum_katilimcilari_sil' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('TÜM katılımcılar kalıcı olarak silinecek. Bu işlem geri alınamaz! Emin misiniz?')">
+                        <i class="fas fa-trash"></i> Tüm Katılımcıları Sil
+                    </button>
+                </form>
             </div>
 
             <!-- Katılım Yapanlar Bölümü -->

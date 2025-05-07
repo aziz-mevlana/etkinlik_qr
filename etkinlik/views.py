@@ -232,4 +232,12 @@ def katilimci_katildi(request, ticket_id):
     ticket.save()
     return HttpResponseRedirect(reverse("katilimci_listesi"))
 
+@login_required
+def tum_katilimcilari_sil(request):
+    if request.method == 'POST':
+        # Tüm katılımcıları sil
+        Ticket.objects.all().delete()
+        return HttpResponseRedirect(reverse("katilimci_listesi"))
+    return HttpResponseRedirect(reverse("katilimci_listesi"))
+
 

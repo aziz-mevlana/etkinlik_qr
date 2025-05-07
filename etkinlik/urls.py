@@ -12,4 +12,5 @@ urlpatterns = [
     path('katilimci-katildi/<int:ticket_id>/', views.katilimci_katildi, name='katilimci_katildi'),
     path('csv-indir/', views.csv_indir, name='csv_indir'),
     path('katilimcilari-sifirla/', views.katilimcilari_sifirla, name='katilimcilari_sifirla'),
+    path('tum-katilimcilari-sil/', views.tum_katilimcilari_sil, name='tum_katilimcilari_sil'),
 ]
