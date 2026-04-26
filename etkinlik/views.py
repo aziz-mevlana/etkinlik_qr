@@ -2,242 +2,315 @@ import io, base64, qrcode, uuid
 import json
 import os
 import csv
+from functools import wraps
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Ticket
+from .models import Ticket, Yoklama, AktifOturum
 from django.shortcuts import render, get_object_or_404
 from .forms import KatilimForm
 from django.urls import reverse
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import Group
+from django.contrib.auth import authenticate, login, logout
 
-def get_day_number():
-    # Etkinliğin başlangıç tarihi (6 Haziran 2024)
-    start_date = datetime(2024, 6, 6)
-    today = datetime.now()
-    day_diff = (today - start_date).days + 1
-    
-    # Eğer etkinlik günleri dışındaysa veya 3 günden fazlaysa None döndür
-    if day_diff < 1 or day_diff > 3:
-        return None
-    return day_diff
+OTURUM_ISIMLERI = {
+    1: "Gün 1 - Oturum 1",
+    2: "Gün 1 - Oturum 2",
+    3: "Gün 2 - Oturum 1",
+    4: "Gün 2 - Oturum 2",
+    5: "Gün 3 - Oturum 1",
+    6: "Gün 3 - Oturum 2",
+}
 
-def log_yoklama(ticket, is_entry):
-    day_number = get_day_number()
-    if day_number is None:
-        return  # Etkinlik günleri dışında log tutma
-    
-    log_dir = os.path.join(settings.BASE_DIR, 'etkinlik', 'logs')
-    os.makedirs(log_dir, exist_ok=True)
-    
-    # Gün numarasına göre dosya adı oluştur
-    log_file = os.path.join(log_dir, f'yoklama_log_gun_{day_number}.txt')
-    
-    with open(log_file, 'a', encoding='utf-8') as f:
-        f.write(f"{timezone.now()} - {ticket.name} - {ticket.student_id} - {ticket.department} - {'Giriş' if is_entry else 'Çıkış'}\n")
 
-def login_required(view_func):
+def gorevli_required(view_func):
+    @wraps(view_func)
+    @login_required(login_url='/etkinlik/giris/')
     def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return HttpResponseRedirect('/admin/login/?next=' + request.path)
-        return view_func(request, *args, **kwargs)
+        if request.user.is_superuser or request.user.is_staff:
+            return view_func(request, *args, **kwargs)
+        if request.user.groups.filter(name='Görevli').exists():
+            return view_func(request, *args, **kwargs)
+        return HttpResponseRedirect(reverse('etkinlik_katilim') + '?yetki=yok')
     return wrapper
 
+
+def admin_required(view_func):
+    @wraps(view_func)
+    @login_required(login_url='/etkinlik/giris/')
+    def wrapper(request, *args, **kwargs):
+        if request.user.is_superuser or request.user.is_staff:
+            return view_func(request, *args, **kwargs)
+        return HttpResponseRedirect(reverse('etkinlik_katilim') + '?yetki=yok')
+    return wrapper
+
+
+def giris(request):
+    if request.user.is_authenticated:
+        next_url = request.GET.get('next', reverse('qr_tarayici'))
+        return HttpResponseRedirect(next_url)
+    hata = None
+    if request.method == 'POST':
+        kullanici_adi = request.POST.get('kullanici_adi')
+        sifre = request.POST.get('sifre')
+        user = authenticate(request, username=kullanici_adi, password=sifre)
+        if user is not None:
+            login(request, user)
+            next_url = request.GET.get('next', reverse('qr_tarayici'))
+            return HttpResponseRedirect(next_url)
+        else:
+            hata = 'Kullanıcı adı veya şifre hatalı.'
+    return render(request, 'etkinlik/giris.html', {'hata': hata})
+
+
+def cikis(request):
+    logout(request)
+    return HttpResponseRedirect(reverse('giris'))
+
+
+def generate_qr_image(qr_data):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+
 def etkinlik_katilim(request):
+    if request.GET.get('yetki') == 'yok':
+        if not request.user.is_authenticated:
+            return HttpResponseRedirect(reverse('giris'))
+
     qr_img = None
+    ticket = None
     if request.method == "POST":
         form = KatilimForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            # Kullanıcının zaten bir bileti olup olmadığını kontrol et
             try:
-                ticket = Ticket.objects.get(name=data['name'], student_id=data['student_id'], department=data['department'])
-                qr_data = ticket.qr_code
+                ticket = Ticket.objects.get(
+                    name=data['name'],
+                    student_id=data['student_id'],
+                    department=data['department']
+                )
+                qr_img = generate_qr_image(ticket.qr_code)
             except Ticket.DoesNotExist:
-                unique_id = str(uuid.uuid4())
-                qr_data = f"Ad: {data['name']}, Öğrenci-Numarası: {data['student_id']}, Bölüm: {data['department']}, ID: {unique_id}"
-                
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=10,
-                    border=4,
+                ticket = Ticket(
+                    name=data['name'],
+                    student_id=data['student_id'],
+                    department=data['department']
                 )
-                qr.add_data(qr_data)
-                qr.make(fit=True)
-                img = qr.make_image(fill_color="black", back_color="white")
-                
-                buffer = io.BytesIO()
-                img.save(buffer, format="PNG")
-                buffer.seek(0)
-                img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-                qr_img = img_base64
-                
-                # Bilet bilgilerini kaydet
-                Ticket.objects.create(name=data['name'], student_id=data['student_id'], department=data['department'], qr_code=qr_data)
-            else:
-                # Mevcut QR kodunu base64 formatına çevir
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=10,
-                    border=4,
-                )
-                qr.add_data(qr_data)
-                qr.make(fit=True)
-                img = qr.make_image(fill_color="black", back_color="white")
-                
-                buffer = io.BytesIO()
-                img.save(buffer, format="PNG")
-                buffer.seek(0)
-                img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-                qr_img = img_base64
-        else:
-            pass
-            
+                ticket.save()
+                qr_img = generate_qr_image(ticket.qr_code)
     else:
         form = KatilimForm()
-            
-    return render(request, "etkinlik/katilim_form.html", {"form": form, "qr_img": qr_img})
 
-@login_required
+    is_gorevli = request.user.is_authenticated and (
+        request.user.is_superuser or request.user.is_staff or request.user.groups.filter(name='Görevli').exists()
+    )
+    return render(request, "etkinlik/katilim_form.html", {
+        "form": form,
+        "qr_img": qr_img,
+        "is_gorevli": is_gorevli,
+        "ticket": ticket,
+    })
+
+
+def ogrenci_sorgulama(request):
+    ticket = None
+    yoklamalar = []
+    hata = None
+    qr_img = None
+
+    if request.method == "POST":
+        student_id = request.POST.get('student_id', '').strip()
+        if student_id:
+            try:
+                ticket = Ticket.objects.get(student_id=student_id)
+                qr_img = generate_qr_image(ticket.qr_code)
+                katildigi = ticket.katildigi_oturumlar()
+                for oturum_no, oturum_adi in OTURUM_ISIMLERI.items():
+                    yoklamalar.append({
+                        'oturum_no': oturum_no,
+                        'oturum_adi': oturum_adi,
+                        'katildi': oturum_no in katildigi,
+                    })
+            except Ticket.DoesNotExist:
+                hata = 'Bu öğrenci numarasına ait kayıt bulunamadı.'
+        else:
+            hata = 'Lütfen öğrenci numaranızı girin.'
+
+    return render(request, "etkinlik/ogrenci_sorgulama.html", {
+        "ticket": ticket,
+        "yoklamalar": yoklamalar,
+        "hata": hata,
+        "qr_img": qr_img,
+    })
+
+
+@gorevli_required
 def qr_kod_onayla(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             qr_data = data.get('qr_data')
-            
-            # Veritabanında QR kodu eşleşen bileti bulmaya çalışıyoruz.
+            oturum = int(data.get('oturum', 0))
+
+            if oturum < 1 or oturum > 6:
+                return JsonResponse({'status': 'error', 'message': 'Geçersiz oturum seçimi.'})
+
             ticket = Ticket.objects.get(qr_code=qr_data)
-            
-            # Eğer kişi çıkış yapmışsa tekrar giriş yapabilir
-            if ticket.is_joined and ticket.leave_date is None:
-                return JsonResponse({'status': 'error', 'message': 'Bu bilet zaten kullanılmış.'})
-            
-            # Katılım onaylama işlemi
-            ticket.is_joined = True
-            current_time = timezone.now()
-            ticket.entry_date = current_time
-            ticket.leave_date = None  # Çıkış tarihini sıfırla
-            ticket.save()
-            
-            # Loglama işlemi
-            log_yoklama(ticket, is_entry=True)
-            
-            return JsonResponse({'status': 'success'})
+
+            if Yoklama.objects.filter(ticket=ticket, oturum=oturum).exists():
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'{ticket.name} bu oturumda zaten yoklama almış.',
+                    'owner': f'{ticket.name}, {ticket.student_id}'
+                })
+
+            Yoklama.objects.create(ticket=ticket, oturum=oturum)
+
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Yoklama alındı - {OTURUM_ISIMLERI[oturum]}',
+                'owner': f'{ticket.name}, {ticket.student_id}'
+            })
         except Ticket.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Geçersiz QR kod.'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
-    
+
     return JsonResponse({'status': 'error', 'message': 'Yalnızca POST isteği kabul edilir.'})
 
-@login_required
-def qr_cikis_onayla(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            qr_data = data.get('qr_data')
-            
-            # Veritabanında QR kodu eşleşen bileti bulmaya çalışıyoruz.
-            ticket = Ticket.objects.get(qr_code=qr_data)
-            
-            if not ticket.is_joined:
-                return JsonResponse({'status': 'error', 'message': 'Bu bilet henüz kullanılmamış.'})
-            
-            if ticket.leave_date is not None:
-                return JsonResponse({'status': 'error', 'message': 'Bu bilet için zaten çıkış yapılmış.'})
-            
-            # Çıkış onaylama işlemi
-            current_time = timezone.now()
-            ticket.leave_date = current_time
-            ticket.save()
-            
-            # Loglama işlemi
-            log_yoklama(ticket, is_entry=False)
-            
-            return JsonResponse({'status': 'success'})
-        except Ticket.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Geçersiz QR kod.'})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)})
-    
-    return JsonResponse({'status': 'error', 'message': 'Yalnızca POST isteği kabul edilir.'})
 
-@login_required
+@gorevli_required
 def qr_tarayici(request):
-    return render(request, "etkinlik/qr_tarayici.html")
+    aktif = AktifOturum.get_aktif()
+    return render(request, "etkinlik/qr_tarayici.html", {
+        "oturumlar": OTURUM_ISIMLERI,
+        "aktif_oturum": aktif,
+        "aktif_oturum_adi": OTURUM_ISIMLERI.get(aktif, "Bilinmiyor"),
+    })
 
-@login_required
+
+@admin_required
 def katilimci_listesi(request):
-    katilanlar = Ticket.objects.filter(is_joined=True)
-    katilmayanlar = Ticket.objects.filter(is_joined=False)
-    toplam_katilimci = (katilanlar.count() + katilmayanlar.count())
-    return render(request, "etkinlik/katilimci_listesi.html", {"katilanlar": katilanlar, "katilmayanlar": katilmayanlar, "toplam_katilimci":toplam_katilimci, "form": KatilimForm()})
+    tickets = Ticket.objects.all().order_by('name')
+    tum_yoklamalar = Yoklama.objects.select_related('ticket').all()
 
-@login_required
+    yoklama_durumu = {}
+    for y in tum_yoklamalar:
+        if y.ticket_id not in yoklama_durumu:
+            yoklama_durumu[y.ticket_id] = set()
+        yoklama_durumu[y.ticket_id].add(y.oturum)
+
+    katilim_listesi = []
+    for ticket in tickets:
+        katildigi = yoklama_durumu.get(ticket.id, set())
+        katilim_listesi.append({
+            'ticket': ticket,
+            'oturumlar': [o in katildigi for o in range(1, 7)],
+            'toplam': len(katildigi),
+        })
+
+    toplam_katilimci = tickets.count()
+
+    is_gorevli = request.user.is_authenticated and (
+        request.user.is_superuser or request.user.is_staff or request.user.groups.filter(name='Görevli').exists()
+    )
+    aktif = AktifOturum.get_aktif()
+    return render(request, "etkinlik/katilimci_listesi.html", {
+        "katilim_listesi": katilim_listesi,
+        "toplam_katilimci": toplam_katilimci,
+        "oturum_isimleri": OTURUM_ISIMLERI,
+        "form": KatilimForm(),
+        "is_gorevli": is_gorevli,
+        "aktif_oturum": aktif,
+    })
+
+
+@admin_required
 def csv_indir(request):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="katilimci_listesi.csv"'
-    
+
     writer = csv.writer(response)
-    writer.writerow(['Ad', 'Öğrenci Numarası', 'Bölüm', 'Giriş Tarihi', 'Çıkış Tarihi'])
-    
-    katilanlar = Ticket.objects.filter(is_joined=True)
-    for katilimci in katilanlar:
-        writer.writerow([
-            katilimci.name,
-            katilimci.student_id,
-            katilimci.get_department_display(),
-            katilimci.entry_date.strftime('%Y-%m-%d %H:%M:%S') if katilimci.entry_date else '-',
-            katilimci.leave_date.strftime('%Y-%m-%d %H:%M:%S') if katilimci.leave_date else '-'
-        ])
-    
+    header = ['Ad', 'Öğrenci Numarası', 'Bölüm']
+    for o in range(1, 7):
+        header.append(OTURUM_ISIMLERI[o])
+    header.append('Toplam')
+    writer.writerow(header)
+
+    tickets = Ticket.objects.all().order_by('name')
+    tum_yoklamalar = Yoklama.objects.select_related('ticket').all()
+
+    yoklama_durumu = {}
+    for y in tum_yoklamalar:
+        if y.ticket_id not in yoklama_durumu:
+            yoklama_durumu[y.ticket_id] = set()
+        yoklama_durumu[y.ticket_id].add(y.oturum)
+
+    for ticket in tickets:
+        katildigi = yoklama_durumu.get(ticket.id, set())
+        row = [ticket.name, ticket.student_id, ticket.get_department_display()]
+        for o in range(1, 7):
+            row.append('+' if o in katildigi else '-')
+        row.append(len(katildigi))
+        writer.writerow(row)
+
     return response
 
-@login_required
-def katilimcilari_sifirla(request):
-    if request.method == 'POST':
-        # Tüm katılımcıların katılım durumunu sıfırla
-        Ticket.objects.all().update(
-            is_joined=False,
-            entry_date=None,
-            leave_date=None
-        )
-        return HttpResponseRedirect(reverse("katilimci_listesi"))
-    return HttpResponseRedirect(reverse("katilimci_listesi"))
 
-@login_required
+@admin_required
 def katilimci_ekle(request):
     if request.method == "POST":
         form = KatilimForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            Ticket.objects.create(name=data['name'], student_id=data['student_id'], department=data['department'], qr_code="")
+            Ticket.objects.get_or_create(
+                student_id=data['student_id'],
+                defaults={
+                    'name': data['name'],
+                    'department': data['department'],
+                }
+            )
     return HttpResponseRedirect(reverse("katilimci_listesi"))
 
-@login_required
+
+@admin_required
 def katilimci_sil(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     ticket.delete()
     return HttpResponseRedirect(reverse("katilimci_listesi"))
 
-@login_required
-def katilimci_katildi(request, ticket_id):
-    ticket = get_object_or_404(Ticket, id=ticket_id)
-    ticket.is_joined = True
-    ticket.entry_date = timezone.now()
-    ticket.save()
-    return HttpResponseRedirect(reverse("katilimci_listesi"))
 
-@login_required
+@admin_required
 def tum_katilimcilari_sil(request):
     if request.method == 'POST':
-        # Tüm katılımcıları sil
+        Yoklama.objects.all().delete()
         Ticket.objects.all().delete()
         return HttpResponseRedirect(reverse("katilimci_listesi"))
     return HttpResponseRedirect(reverse("katilimci_listesi"))
 
 
+@admin_required
+def aktif_oturum_degistir(request):
+    if request.method == 'POST':
+        oturum = int(request.POST.get('oturum', 1))
+        if 1 <= oturum <= 6:
+            AktifOturum.objects.update_or_create(
+                pk=1,
+                defaults={'oturum': oturum}
+            )
+    return HttpResponseRedirect(reverse("katilimci_listesi"))

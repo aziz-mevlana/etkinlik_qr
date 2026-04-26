@@ -5,12 +5,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Kod Tarayıcı</title>  
+  <title>QR Kod Tarayıcı</title>
   <script src="{% static 'etkinlik/js/qr.min.js' %}"></script>
-  <script src="{% static 'etkinlik/js/canvas-confetti.min.js' %}"></script>
   <link rel="stylesheet" href="{% static 'etkinlik/css/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'etkinlik/css/all.min.css' %}">
   <link rel="stylesheet" href="{% static 'etkinlik/css/qr_tarayici.css' %}">
+  <style>
+    @font-face {
+      font-family: 'olneylight';
+      font-style: normal;
+      font-weight: normal;
+      font-display: swap;
+      src: url("{% static 'etkinlik/font/olney_light.woff2' %}") format('woff2');
+      src: url("{% static 'etkinlik/font/olney_light.woff' %}") format('woff');
+    }
+
+    .aktif-oturum-badge {
+      background-color: #243D8F;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+      box-shadow: 0 3px 10px rgba(36, 61, 143, 0.4);
+    }
+
+    .aktif-oturum-badge .badge-label {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 0.25rem;
+    }
+
+    .aktif-oturum-badge .badge-value {
+      font-size: 1.2rem;
+    }
+  </style>
 </head>
 
 <body>
@@ -20,13 +50,9 @@
       <h2>QR Kod Tarayıcı</h2>
     </div>
     <div class="scanner-container">
-      <div class="mode-selector">
-        <button id="entry-button" class="btn btn-primary mode-btn active">
-          <i class="fas fa-sign-in-alt mr-2"></i>Giriş
-        </button>
-        <button id="exit-button" class="btn btn-secondary mode-btn">
-          <i class="fas fa-sign-out-alt mr-2"></i>Çıkış
-        </button>
+      <div class="aktif-oturum-badge">
+        <div class="badge-label"><i class="fas fa-calendar-check mr-1"></i>Aktif Oturum</div>
+        <div class="badge-value">{{ aktif_oturum_adi }}</div>
       </div>
 
       <div id="reader"></div>
@@ -41,227 +67,124 @@
         <div id="status" class="status-text"></div>
         <div id="owner" class="owner-text"></div>
       </div>
+    </div>
+  </div>
 
-      <div id="cat-gif" class="gif-container" style="display: none;">
-        <img src="{% static 'etkinlik/img/giphy.gif' %}" alt="Kamera kapalı" class="img-fluid">
-      </div>
-
-      <!-- Kamera Değiştirme Butonu -->
-      <button id="switch-camera" class="btn btn-info camera-switch-btn">
-        <i class="fas fa-camera"></i> Kamerayı Değiştir
+  <!-- Görevli Öğrenciler için Gizli Buton -->
+  <div class="gorevli-btn">
+    <div class="btn-group">
+      <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="fas fa-cog"></i>
       </button>
+      <div class="dropdown-menu dropdown-menu-right">
+        <a class="dropdown-item" href="{% url 'etkinlik_katilim' %}">
+          <i class="fas fa-file-alt mr-2"></i>Form Sayfası
+        </a>
+        <a class="dropdown-item" href="{% url 'qr_tarayici' %}">
+          <i class="fas fa-qrcode mr-2"></i>QR Tarayıcı
+        </a>
+        {% if user.is_superuser or user.is_staff %}
+        <a class="dropdown-item" href="{% url 'katilimci_listesi' %}">
+          <i class="fas fa-list mr-2"></i>Katılımcı Listesi
+        </a>
+        <div class="dropdown-divider"></div>
+        <a class="dropdown-item" href="{% url 'admin:index' %}">
+          <i class="fas fa-user-shield mr-2"></i>Yönetici Paneli
+        </a>
+        {% endif %}
+        <div class="dropdown-divider"></div>
+        <a class="dropdown-item" href="{% url 'cikis' %}">
+          <i class="fas fa-sign-out-alt mr-2"></i>Çıkış Yap
+        </a>
+      </div>
     </div>
   </div>
 
   <script>
     let html5QrCode;
-    let mode = 'entry'; // Default mode is entry
-    let currentCameraIndex = 0;
-    let cameras = [];
+    let selectedOturum = {{ aktif_oturum }};
     let isScannerRunning = false;
+    let scanCooldown = false;
 
-    document.getElementById('entry-button').addEventListener('click', function () {
-      mode = 'entry';
-      this.classList.add('active', 'btn-primary');
-      this.classList.remove('btn-secondary');
-      document.getElementById('exit-button').classList.remove('active', 'btn-primary');
-      document.getElementById('exit-button').classList.add('btn-secondary');
-    });
+    function onScanSuccess(decodedText) {
+      if (scanCooldown) return;
+      scanCooldown = true;
 
-    document.getElementById('exit-button').addEventListener('click', function () {
-      mode = 'exit';
-      this.classList.add('active', 'btn-primary');
-      this.classList.remove('btn-secondary');
-      document.getElementById('entry-button').classList.remove('active', 'btn-primary');
-      document.getElementById('entry-button').classList.add('btn-secondary');
-    });
-
-    // Konfeti efekti fonksiyonu
-    function triggerConfetti() {
-        const duration = 3 * 1000;
-        const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-        function randomInRange(min, max) {
-            return Math.random() * (max - min) + min;
-        }
-
-        const interval = setInterval(function() {
-            const timeLeft = animationEnd - Date.now();
-
-            if (timeLeft <= 0) {
-                return clearInterval(interval);
-            }
-
-            const particleCount = 50 * (timeLeft / duration);
-            
-            confetti({
-                ...defaults,
-                particleCount,
-                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-            });
-            confetti({
-                ...defaults,
-                particleCount,
-                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-            });
-        }, 250);
-    }
-
-    function onScanSuccess(decodedText, decodedResult) {
-      console.log(`QR kod okundu: ${decodedText}`);
-
-      // Extract ticket owner information from decodedText
-      let ticketInfo = decodedText.split(',');
-      let ownerName = ticketInfo[0].split(':')[1].trim();
-      let ownerMail = ticketInfo[1].split(':')[1].trim();
-
-      // Show status container
       document.getElementById("status-display").style.display = "block";
-      document.getElementById("status").innerText = "İşleniyor...";
-
-      // Hide success/error icons initially
       document.getElementById("status-icon-success").style.display = "none";
       document.getElementById("status-icon-error").style.display = "none";
+      document.getElementById("status").innerText = "İşleniyor...";
+      document.getElementById("owner").innerText = "";
 
-      // Determine the URL based on the mode
-      let url = mode === 'entry' ? "/etkinlik/qr-onayla/" : "/etkinlik/qr-cikis-onayla/";
-
-      // Sunucuya veri göndermek için:
-      fetch(url, {
+      fetch("/etkinlik/qr-onayla/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-CSRFToken": "{{ csrf_token }}"
         },
-        body: JSON.stringify({ qr_data: decodedText })
+        body: JSON.stringify({ qr_data: decodedText, oturum: selectedOturum })
       })
         .then(response => response.json())
         .then(data => {
           if (data.status === 'success') {
             document.getElementById("status-icon-success").style.display = "block";
-            document.getElementById("status").innerText = mode === 'entry' ? "Giriş Başarılı" : "Çıkış Başarılı";
-            document.getElementById("owner").innerText = `${ownerName}, ${ownerMail}`;
-            document.getElementById("cat-gif").style.display = "block";
-            document.getElementById("reader").style.display = "none";
-            
-            // Başarılı QR okuma durumunda konfeti efektini tetikle
-            triggerConfetti();
+            document.getElementById("status").innerText = data.message;
+            document.getElementById("owner").innerText = data.owner;
           } else {
             document.getElementById("status-icon-error").style.display = "block";
-            document.getElementById("status").innerText = "İşlem Başarısız";
-            document.getElementById("owner").innerText = `Hata: ${data.message}`;
+            document.getElementById("status").innerText = data.message;
+            if (data.owner) document.getElementById("owner").innerText = data.owner;
           }
+
+          setTimeout(() => {
+            scanCooldown = false;
+            document.getElementById("status-display").style.display = "none";
+          }, 3000);
         })
         .catch(error => {
           console.error("Hata:", error);
           document.getElementById("status-icon-error").style.display = "block";
           document.getElementById("status").innerText = "Bağlantı Hatası";
-          document.getElementById("owner").innerText = "Sunucuya bağlanırken bir hata oluştu.";
-        });
-
-      // QR kod tarayıcıyı durdur
-      if (isScannerRunning) {
-        html5QrCode.stop().then(() => {
-          console.log("QR kod tarayıcı durduruldu");
-          isScannerRunning = false;
-
-          // 3 saniye sonra QR kod tarayıcıyı yeniden başlat
           setTimeout(() => {
-            document.getElementById("cat-gif").style.display = "none";
-            document.getElementById("reader").style.display = "block";
+            scanCooldown = false;
             document.getElementById("status-display").style.display = "none";
-            
-            // Yeni bir Html5Qrcode örneği oluştur
-            html5QrCode = new Html5Qrcode("reader");
-            startScanner();
           }, 3000);
-        }).catch(err => {
-          console.error("QR kod tarayıcı durdurulamadı", err);
-          isScannerRunning = false;
         });
-      }
     }
 
-    function onScanFailure(error) {
-      console.warn(`QR kod okuma hatası: ${error}`);
-    }
-
-    // Kamera değiştirme fonksiyonu
-    function switchCamera() {
-      if (cameras.length > 1) {
-        currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-        startScanner();
-      }
-    }
-
-    // Scanner'ı başlatma fonksiyonu
-    function startScanner() {
-      if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-      }
-
-      if (isScannerRunning) {
-        html5QrCode.stop().then(() => {
-          isScannerRunning = false;
-          startCamera();
-        }).catch(err => {
-          console.error("Scanner durdurulamadı", err);
-          isScannerRunning = false;
-        });
-      } else {
-        startCamera();
-      }
-    }
+    function onScanFailure(error) {}
 
     function startCamera() {
-      if (cameras && cameras.length > 0) {
+      html5QrCode.start(
+        { facingMode: { exact: "environment" } },
+        { fps: 10, qrbox: 250 },
+        onScanSuccess,
+        onScanFailure
+      ).then(() => {
+        isScannerRunning = true;
+      }).catch(() => {
         html5QrCode.start(
-          cameras[currentCameraIndex].id,
+          { facingMode: "user" },
           { fps: 10, qrbox: 250 },
           onScanSuccess,
           onScanFailure
         ).then(() => {
           isScannerRunning = true;
-          console.log("Kamera başlatıldı");
-        }).catch(err => {
-          console.error("Kamera başlatılamadı", err);
-          showCameraError();
+        }).catch(() => {
+          document.getElementById("status-display").style.display = "block";
+          document.getElementById("status-icon-error").style.display = "block";
+          document.getElementById("status").innerText = "Kamera Erişimi Hatası";
+          document.getElementById("owner").innerText = "Lütfen kamera izinlerini kontrol edin ve sayfayı yenileyin.";
+          document.getElementById("reader").style.display = "none";
         });
-      } else {
-        showCameraError();
-      }
+      });
     }
 
-    function showCameraError() {
-      document.getElementById("status-display").style.display = "block";
-      document.getElementById("status-icon-error").style.display = "block";
-      document.getElementById("status").innerText = "Kamera Erişimi Hatası";
-      document.getElementById("owner").innerText = "Lütfen kamera izinlerini kontrol edin ve sayfayı yenileyin.";
-      document.getElementById("cat-gif").style.display = "block";
-      document.getElementById("reader").style.display = "none";
-    }
-
-    // Kameraları al ve başlat
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        cameras = devices;
-        html5QrCode = new Html5Qrcode("reader");
-        startScanner();
-      } else {
-        showCameraError();
-      }
-    }).catch(err => {
-      console.error("Kamera erişimi hatası:", err);
-      showCameraError();
-    });
-
-    // Kamera değiştirme butonuna tıklama olayı
-    document.getElementById('switch-camera').addEventListener('click', switchCamera);
+    html5QrCode = new Html5Qrcode("reader");
+    startCamera();
   </script>
-  <script src="{% static 'etkinlik/js/slim.min.js' %}"></script>
-  <script src="{% static 'etkinlik/js/popper.min.js' %}"></script>
-  <script src="{% static 'etkinlik/js/bootstrap.min.js' %}"></script>
+  <script src="{% static 'etkinlik/js/jquery.min.js' %}"></script>
+  <script src="{% static 'etkinlik/js/bootstrap.bundle.min.js' %}"></script>
 </body>
 
 </html>

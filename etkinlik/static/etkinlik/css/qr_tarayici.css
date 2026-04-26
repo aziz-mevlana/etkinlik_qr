@@ -1,141 +1,122 @@
 body {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #181818;
+    background-image: url("../img/topography.svg");
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'olneylight', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
 }
 
 .app-container {
-  max-width: 550px;
-  width: 100%;
-  margin: 2rem auto;
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+    max-width: 550px;
+    width: 100%;
+    margin: 2rem auto;
+    background: #1d1d1d;
+    border-radius: 15px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
 }
 
 .app-header {
-  background: linear-gradient(45deg, #3a7bd5, #00d2ff);
-  color: white;
-  padding: 1.5rem;
-  text-align: center;
+    background-color: #243D8F;
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
 }
 
 .app-header h2 {
-  margin: 0;
-  font-weight: 600;
+    margin: 0;
+    font-weight: 600;
 }
 
 .scanner-container {
-  padding: 1.5rem;
-}
-
-.mode-selector {
-  margin-bottom: 1.5rem;
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.mode-btn {
-  padding: 0.6rem 1.5rem;
-  border-radius: 30px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  width: 120px;
-}
-
-.mode-btn:hover {
-  transform: translateY(-2px);
-}
-
-.mode-btn.active {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
 }
 
 #reader {
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
 }
 
 .status-container {
-  background-color: #f8f9fa;
-  border-radius: 10px;
-  padding: 1.5rem;
-  margin-top: 1.5rem;
-  text-align: center;
+    background-color: #2a2a2a;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    text-align: center;
 }
 
 .status-icon {
-  font-size: 2rem;
-  margin-bottom: 1rem;
+    font-size: 2rem;
+    line-height: 70px;
 }
 
 .success-icon {
-  color: #28a745;
+    color: #28a745;
 }
 
 .error-icon {
-  color: #dc3545;
+    color: #dc3545;
 }
 
 .status-text {
-  font-weight: 600;
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
 }
 
 .owner-text {
-  color: #6c757d;
-}
-
-.gif-container {
-  text-align: center;
-  margin-top: 1.5rem;
-}
-
-.gif-container img {
-  max-width: 100%;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    color: #aaa;
 }
 
 .icon-container {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  background-color: #f8f9fa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background-color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
-.camera-switch-btn {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  padding: 10px 20px;
-  border-radius: 30px;
-  background: linear-gradient(45deg, #3a7bd5, #00d2ff);
-  border: none;
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  z-index: 1000;
+.gorevli-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    opacity: 0.3;
+    transition: opacity 0.3s;
+    z-index: 1000;
 }
 
-.camera-switch-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+.gorevli-btn:hover {
+    opacity: 1;
 }
 
-.camera-switch-btn i {
-  margin-right: 8px;
+.gorevli-btn .btn-secondary {
+    background-color: #333;
+    border-color: #555;
+    color: white;
+}
+
+.gorevli-btn .dropdown-menu {
+    background-color: #1d1d1d;
+    border: 1px solid #333;
+}
+
+.gorevli-btn .dropdown-item {
+    color: #ccc;
+}
+
+.gorevli-btn .dropdown-item:hover {
+    background-color: #2a2a2a;
+    color: white;
+}
+
+.gorevli-btn .dropdown-divider {
+    border-color: #333;
 }

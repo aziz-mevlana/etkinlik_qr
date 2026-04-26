@@ -1,20 +1,22 @@
 body {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background-color: #181818;
+    background-image: url("../img/topography.svg");
     min-height: 100vh;
     padding: 2rem 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'olneylight', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
 }
 
 .dashboard-container {
-    background: white;
+    background: #1d1d1d;
     border-radius: 15px;
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
     overflow: hidden;
     margin-bottom: 2rem;
 }
 
 .dashboard-header {
-    background: linear-gradient(45deg, #3a7bd5, #00d2ff);
+    background-color: #243D8F;
     color: white;
     padding: 1.5rem;
     text-align: center;
@@ -29,15 +31,15 @@ body {
     display: flex;
     justify-content: space-around;
     padding: 1.5rem;
-    background-color: #f8f9fa;
+    background-color: #2a2a2a;
 }
 
 .stat-card {
     text-align: center;
     padding: 1rem;
-    background: white;
+    background: #252525;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     flex: 1;
     margin: 0 0.5rem;
 }
@@ -45,17 +47,17 @@ body {
 .stat-card .icon {
     font-size: 2rem;
     margin-bottom: 0.5rem;
-    color: #3a7bd5;
+    color: #6b9fff;
 }
 
 .stat-card .count {
     font-size: 1.5rem;
     font-weight: bold;
-    color: #333;
+    color: white;
 }
 
 .stat-card .label {
-    color: #6c757d;
+    color: #aaa;
     font-size: 0.9rem;
 }
 
@@ -63,21 +65,21 @@ body {
     display: flex;
     align-items: center;
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid #e9ecef;
-    background-color: #f8f9fa;
+    border-bottom: 1px solid #333;
+    background-color: #252525;
 }
 
 .section-title .icon {
     font-size: 1.5rem;
     margin-right: 0.75rem;
-    color: #3a7bd5;
+    color: #6b9fff;
 }
 
 .section-title h3 {
     margin: 0;
     font-weight: 600;
     font-size: 1.25rem;
-    color: #333;
+    color: white;
 }
 
 .table-responsive {
@@ -86,11 +88,39 @@ body {
 
 .table {
     margin-bottom: 0;
+    color: white;
 }
 
-.table th {
-    background-color: #f8f9fa;
+.table thead th {
+    background-color: #252525;
     border-top: none;
+    color: #ccc;
+    border-bottom: 1px solid #333;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.table thead th:first-child,
+.table thead th:nth-child(2),
+.table thead th:last-child {
+    text-align: left;
+}
+
+.table tbody td {
+    border-color: #333;
+    color: white;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.table tbody td:first-child,
+.table tbody td:nth-child(2),
+.table tbody td:last-child {
+    text-align: left;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #333;
 }
 
 .action-btn {
@@ -100,7 +130,7 @@ body {
 
 .add-form {
     padding: 1.5rem;
-    background-color: #f8f9fa;
+    background-color: #252525;
 }
 
 .add-form .form-row {
@@ -114,8 +144,26 @@ body {
     flex: 1;
 }
 
+.add-form .form-control {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: white;
+}
+
+.add-form .form-control:focus {
+    background-color: #333;
+    border-color: #243D8F;
+    color: white;
+    box-shadow: 0 0 0 0.2rem rgba(36, 61, 143, 0.25);
+}
+
+.add-form select.form-control option {
+    background-color: #2a2a2a;
+    color: white;
+}
+
 .badge-primary {
-    background-color: #3a7bd5;
+    background-color: #243D8F;
 }
 
 .status-badge {
@@ -136,8 +184,8 @@ body {
 
 .action-buttons {
     padding: 1rem 1.5rem;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
+    background-color: #2a2a2a;
+    border-bottom: 1px solid #333;
     display: flex;
     gap: 1rem;
     justify-content: flex-end;
@@ -153,6 +201,14 @@ body {
 
 .action-buttons .btn i {
     font-size: 1.1rem;
+}
+
+.text-muted {
+    color: #888 !important;
+}
+
+.text-info {
+    color: #6b9fff !important;
 }
 
 @media (max-width: 767px) {
@@ -177,30 +233,110 @@ body {
         margin-bottom: 1rem;
     }
 }
+
 .footer {
     text-align: center;
     padding: 20px 0;
     margin-top: 30px;
-    color: #6c757d;
+    color: #888;
     font-size: 0.9rem;
 }
+
 .footer a {
-    color: #007bff;
+    color: #6b9fff;
     text-decoration: none;
     transition: color 0.3s;
 }
+
 .footer a:hover {
-    color: #0056b3;
+    color: #a0c0ff;
 }
+
 .developer-name {
     font-weight: 500;
 }
+
 .heart-icon {
     color: #dc3545;
     animation: heartbeat 1.5s infinite;
 }
+
 @keyframes heartbeat {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
+}
+
+.oturum-selector-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background-color: #243D8F;
+    border-bottom: 1px solid #1a2d6b;
+}
+
+.oturum-label {
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.oturum-form {
+    margin: 0;
+}
+
+.oturum-select {
+    background-color: white;
+    color: #1d1d1d;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    min-width: 180px;
+}
+
+.oturum-select:focus {
+    outline: 2px solid #6b9fff;
+    outline-offset: 2px;
+}
+
+.gorevli-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    opacity: 0.3;
+    transition: opacity 0.3s;
+    z-index: 1000;
+}
+
+.gorevli-btn:hover {
+    opacity: 1;
+}
+
+.gorevli-btn .btn-secondary {
+    background-color: #333;
+    border-color: #555;
+    color: white;
+}
+
+.gorevli-btn .dropdown-menu {
+    background-color: #1d1d1d;
+    border: 1px solid #333;
+}
+
+.gorevli-btn .dropdown-item {
+    color: #ccc;
+}
+
+.gorevli-btn .dropdown-item:hover {
+    background-color: #2a2a2a;
+    color: white;
+}
+
+.gorevli-btn .dropdown-divider {
+    border-color: #333;
 }

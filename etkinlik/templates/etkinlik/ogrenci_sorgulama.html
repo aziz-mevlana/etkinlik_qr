@@ -1,0 +1,249 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yoklama Sorgulama</title>
+    <link rel="stylesheet" href="{% static 'etkinlik/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'etkinlik/css/all.min.css' %}">
+    <style>
+        @font-face {
+            font-family: 'olneylight';
+            font-style: normal;
+            font-weight: normal;
+            font-display: swap;
+            src: url("{% static 'etkinlik/font/olney_light.woff2' %}") format('woff2');
+            src: url("{% static 'etkinlik/font/olney_light.woff' %}") format('woff');
+        }
+
+        body {
+            background-color: #181818;
+            background-image: url("{% static 'etkinlik/img/topography.svg' %}");
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'olneylight', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+        }
+
+        .sorgu-card {
+            background: #1d1d1d;
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .sorgu-header {
+            background-color: #243D8F;
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .sorgu-header h3 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .sorgu-body {
+            padding: 2rem;
+        }
+
+        .form-control {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 5px;
+            padding: 0.75rem;
+            height: 45px;
+        }
+
+        .form-control:focus {
+            background-color: #333;
+            border-color: #243D8F;
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(36, 61, 143, 0.25);
+        }
+
+        .form-control::placeholder {
+            color: #888;
+        }
+
+        .btn-sorgula {
+            background-color: #243D8F;
+            border: none;
+            width: 100%;
+            padding: 0.75rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            border-radius: 5px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-sorgula:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(36, 61, 143, 0.4);
+            background-color: #1a2d6b;
+        }
+
+        .alert {
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .result-section {
+            margin-top: 1.5rem;
+        }
+
+        .student-info {
+            background-color: #2a2a2a;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .student-info h4 {
+            margin: 0;
+            color: #6b9fff;
+        }
+
+        .student-info p {
+            margin: 0.25rem 0 0;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .qr-display {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .qr-display img {
+            max-width: 180px;
+            border-radius: 10px;
+            background: white;
+            padding: 10px;
+        }
+
+        .oturum-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .oturum-item {
+            background-color: #2a2a2a;
+            border-radius: 10px;
+            padding: 0.75rem;
+            text-align: center;
+            border: 2px solid #333;
+        }
+
+        .oturum-item.katildi {
+            border-color: #28a745;
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+
+        .oturum-item.katilmadi {
+            border-color: #dc3545;
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+
+        .oturum-item .oturum-label {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 0.25rem;
+        }
+
+        .oturum-item .oturum-status {
+            font-size: 1.5rem;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .back-link a {
+            color: #6b9fff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sorgu-card">
+        <div class="sorgu-header">
+            <i class="fas fa-search mb-2" style="font-size: 2rem;"></i>
+            <h3>Yoklama Sorgulama</h3>
+        </div>
+        <div class="sorgu-body">
+            {% if hata %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle mr-2"></i>{{ hata }}
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label><i class="fas fa-id-card mr-2"></i>Öğrenci Numarası</label>
+                    <input type="text" name="student_id" class="form-control" placeholder="Öğrenci numaranızı girin" value="{{ ticket.student_id|default:'' }}" required>
+                </div>
+                <button type="submit" class="btn btn-sorgula">
+                    <i class="fas fa-search mr-2"></i>Sorgula
+                </button>
+            </form>
+
+            {% if ticket %}
+            <div class="result-section">
+                <div class="student-info">
+                    <h4>{{ ticket.name }}</h4>
+                    <p>{{ ticket.get_department_display }}</p>
+                </div>
+
+                <div class="qr-display">
+                    {% if qr_img %}
+                    <img src="data:image/png;base64,{{ qr_img }}" alt="QR Kod">
+                    {% endif %}
+                    <p class="mt-2" style="color: #888; font-size: 0.85rem;">Bu QR kodu yoklama için kullanın</p>
+                </div>
+
+                <h5 class="mb-3" style="text-align: center; color: #6b9fff;">
+                    <i class="fas fa-clipboard-list mr-2"></i>Yoklama Durumu
+                </h5>
+                <div class="oturum-grid">
+                    {% for y in yoklamalar %}
+                    <div class="oturum-item {% if y.katildi %}katildi{% else %}katilmadi{% endif %}">
+                        <div class="oturum-label">{{ y.oturum_adi }}</div>
+                        <div class="oturum-status">
+                            {% if y.katildi %}
+                            <i class="fas fa-check-circle" style="color: #28a745;"></i>
+                            {% else %}
+                            <i class="fas fa-times-circle" style="color: #dc3545;"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="back-link">
+                <a href="{% url 'etkinlik_katilim' %}">
+                    <i class="fas fa-arrow-left mr-2"></i>Form Sayfasına Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

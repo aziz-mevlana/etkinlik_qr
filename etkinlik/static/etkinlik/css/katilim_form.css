@@ -1,24 +1,27 @@
 body {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background-color: #181818;
+    background-image: url("../img/topography.svg");
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'olneylight', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
 }
 
 .card {
     border-radius: 15px;
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
     overflow: hidden;
     border: none;
     max-width: 500px;
     width: 100%;
     margin: 2rem auto;
+    background-color: #1d1d1d;
 }
 
 .card-header {
-    background: linear-gradient(45deg, #3a7bd5, #00d2ff);
+    background-color: #243D8F;
     color: white;
     border-bottom: none;
     padding: 1.5rem;
@@ -36,11 +39,11 @@ body {
 
 .form-label {
     font-weight: 600;
-    color: #555;
+    color: #ccc;
 }
 
 .btn-submit {
-    background: linear-gradient(45deg, #3a7bd5, #00d2ff);
+    background-color: #243D8F;
     border: none;
     width: 100%;
     padding: 0.75rem;
@@ -48,15 +51,17 @@ body {
     margin-top: 1rem;
     border-radius: 5px;
     transition: all 0.3s ease;
+    color: white;
 }
 
 .btn-submit:hover {
     transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 5px 15px rgba(36, 61, 143, 0.4);
+    background-color: #1a2d6b;
 }
 
 .qr-section {
-    background-color: #f8f9fa;
+    background-color: #2a2a2a;
     border-radius: 10px;
     padding: 1.5rem;
     text-align: center;
@@ -65,7 +70,7 @@ body {
 
 .qr-section h4 {
     margin-bottom: 1rem;
-    color: #3a7bd5;
+    color: #6b9fff;
 }
 
 .qr-img {
@@ -74,7 +79,7 @@ body {
     padding: 0.5rem;
     background-color: white;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .form-control {
@@ -82,6 +87,31 @@ body {
     padding: 0.75rem;
     height: 45px;
     font-size: 1rem;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: white;
+}
+
+.form-control:focus {
+    background-color: #333;
+    border-color: #243D8F;
+    color: white;
+    box-shadow: 0 0 0 0.2rem rgba(36, 61, 143, 0.25);
+}
+
+.form-control::placeholder {
+    color: #888;
+}
+
+select.form-control {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: white;
+}
+
+select.form-control option {
+    background-color: #2a2a2a;
+    color: white;
 }
 
 .input-group {
@@ -90,7 +120,7 @@ body {
 }
 
 .input-group-text {
-    background-color: #3a7bd5;
+    background-color: #243D8F;
     color: white;
     border: none;
     width: 45px;
@@ -109,6 +139,7 @@ body {
     margin-bottom: 0.5rem;
     color: white;
 }
+
 .gorevli-btn {
     position: fixed;
     bottom: 20px;
@@ -117,31 +148,62 @@ body {
     transition: opacity 0.3s;
     z-index: 1000;
 }
+
 .gorevli-btn:hover {
     opacity: 1;
 }
+
+.gorevli-btn .btn-secondary {
+    background-color: #333;
+    border-color: #555;
+    color: white;
+}
+
+.gorevli-btn .dropdown-menu {
+    background-color: #1d1d1d;
+    border: 1px solid #333;
+}
+
+.gorevli-btn .dropdown-item {
+    color: #ccc;
+}
+
+.gorevli-btn .dropdown-item:hover {
+    background-color: #2a2a2a;
+    color: white;
+}
+
+.gorevli-btn .dropdown-divider {
+    border-color: #333;
+}
+
 .footer {
     text-align: center;
     padding: 20px 0;
     margin-top: 30px;
-    color: #6c757d;
+    color: #888;
     font-size: 0.9rem;
 }
+
 .footer a {
-    color: #007bff;
+    color: #6b9fff;
     text-decoration: none;
     transition: color 0.3s;
 }
+
 .footer a:hover {
-    color: #0056b3;
+    color: #a0c0ff;
 }
+
 .developer-name {
     font-weight: 500;
 }
+
 .heart-icon {
     color: #dc3545;
     animation: heartbeat 1.5s infinite;
 }
+
 @keyframes heartbeat {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }

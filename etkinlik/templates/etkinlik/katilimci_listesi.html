@@ -9,6 +9,50 @@
     <link rel="stylesheet" href="{% static 'etkinlik/css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'etkinlik/css/all.min.css' %}">
     <link rel="stylesheet" href="{% static 'etkinlik/css/katilimci_listesi.css' %}">
+    <style>
+        @font-face {
+            font-family: 'olneylight';
+            font-style: normal;
+            font-weight: normal;
+            font-display: swap;
+            src: url("{% static 'etkinlik/font/olney_light.woff2' %}") format('woff2');
+            src: url("{% static 'etkinlik/font/olney_light.woff' %}") format('woff');
+        }
+
+        .oturum-header {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            text-align: center;
+            padding: 0.5rem 0.25rem;
+            vertical-align: bottom;
+        }
+
+        .katildi-icon {
+            color: #28a745;
+            font-size: 1.1rem;
+        }
+
+        .katilmadi-icon {
+            color: #dc3545;
+            font-size: 1.1rem;
+        }
+
+        .toplam-badge {
+            background-color: #243D8F;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+    </style>
 </head>
 
 <body>
@@ -21,20 +65,25 @@
 
             <div class="stats-row">
                 <div class="stat-card">
-                    <div class="icon"><i class="fas fa-user-check"></i></div>
-                    <div class="count">{{ katilanlar|length }}</div>
-                    <div class="label">Katılım Yapan</div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon"><i class="fas fa-user-clock"></i></div>
-                    <div class="count">{{ katilmayanlar|length }}</div>
-                    <div class="label">Katılım Yapmayan</div>
-                </div>
-                <div class="stat-card">
                     <div class="icon"><i class="fas fa-users"></i></div>
                     <div class="count">{{ toplam_katilimci }}</div>
                     <div class="label">Toplam Kayıt</div>
                 </div>
+            </div>
+
+            <!-- Aktif Oturum Seçici -->
+            <div class="oturum-selector-bar">
+                <div class="oturum-label">
+                    <i class="fas fa-calendar-check mr-2"></i>Aktif Oturum:
+                </div>
+                <form method="post" action="{% url 'aktif_oturum_degistir' %}" class="oturum-form">
+                    {% csrf_token %}
+                    <select name="oturum" class="oturum-select" onchange="this.form.submit()">
+                        {% for no, adi in oturum_isimleri.items %}
+                        <option value="{{ no }}" {% if aktif_oturum == no %}selected{% endif %}>{{ adi }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
             </div>
 
             <!-- İşlem Butonları -->
@@ -42,24 +91,18 @@
                 <a href="{% url 'csv_indir' %}" class="btn btn-success">
                     <i class="fas fa-file-csv"></i> CSV İndir
                 </a>
-                <form method="post" action="{% url 'katilimcilari_sifirla' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-warning" onclick="return confirm('Tüm katılımcıların durumu sıfırlanacak. Emin misiniz?')">
-                        <i class="fas fa-redo"></i> Katılımcıları Sıfırla
-                    </button>
-                </form>
                 <form method="post" action="{% url 'tum_katilimcilari_sil' %}" style="display: inline;">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger" onclick="return confirm('TÜM katılımcılar kalıcı olarak silinecek. Bu işlem geri alınamaz! Emin misiniz?')">
-                        <i class="fas fa-trash"></i> Tüm Katılımcıları Sil
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('TÜM katılımcılar ve yoklamalar silinecek. Emin misiniz?')">
+                        <i class="fas fa-trash"></i> Tümünü Sil
                     </button>
                 </form>
             </div>
 
-            <!-- Katılım Yapanlar Bölümü -->
+            <!-- Katılımcı Tablosu -->
             <div class="section-title">
-                <div class="icon"><i class="fas fa-user-check"></i></div>
-                <h3>Katılım Yapanlar</h3>
+                <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+                <h3>Yoklama Tablosu</h3>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover">
@@ -67,24 +110,35 @@
                         <tr>
                             <th><i class="fas fa-user mr-2"></i>Ad</th>
                             <th><i class="fas fa-id-card mr-2"></i>Numara</th>
-                            <th><i class="fas fa-graduation-cap mr-2"></i>Bölüm</th>
-                            <th><i class="fas fa-sign-in-alt mr-2"></i>Giriş</th>
-                            <th><i class="fas fa-sign-out-alt mr-2"></i>Çıkış</th>
+                            <th style="text-align: center;"><span class="oturum-header">G1-O1</span></th>
+                            <th style="text-align: center;"><span class="oturum-header">G1-O2</span></th>
+                            <th style="text-align: center;"><span class="oturum-header">G2-O1</span></th>
+                            <th style="text-align: center;"><span class="oturum-header">G2-O2</span></th>
+                            <th style="text-align: center;"><span class="oturum-header">G3-O1</span></th>
+                            <th style="text-align: center;"><span class="oturum-header">G3-O2</span></th>
+                            <th style="text-align: center;"><span class="oturum-header">Toplam</span></th>
                             <th><i class="fas fa-cog mr-2"></i>İşlem</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for ticket in katilanlar %}
+                        {% for item in katilim_listesi %}
                         <tr>
-                            <td>{{ ticket.name }}</td>
-                            <td>{{ ticket.student_id }}</td>
-                            <td><span class="badge badge-primary">{{ ticket.get_department_display }}</span></td>
-                            <td>{% if ticket.entry_date %}{{ ticket.entry_date|date:"H:i:s" }}{% else %}-{% endif %}
+                            <td>{{ item.ticket.name }}</td>
+                            <td>{{ item.ticket.student_id }}</td>
+                            {% for durum in item.oturumlar %}
+                            <td style="text-align: center;">
+                                {% if durum %}
+                                <i class="fas fa-check-circle katildi-icon"></i>
+                                {% else %}
+                                <i class="fas fa-times-circle katilmadi-icon"></i>
+                                {% endif %}
                             </td>
-                            <td>{% if ticket.leave_date %}{{ ticket.leave_date|date:"H:i:s" }}{% else %}-{% endif %}
+                            {% endfor %}
+                            <td style="text-align: center;">
+                                <span class="toplam-badge">{{ item.toplam }}</span>
                             </td>
                             <td>
-                                <form method="post" action="{% url 'katilimci_sil' ticket.id %}">
+                                <form method="post" action="{% url 'katilimci_sil' item.ticket.id %}">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-danger action-btn" title="Katılımcıyı Sil">
                                         <i class="fas fa-trash"></i>
@@ -94,57 +148,9 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center py-4">
+                            <td colspan="10" class="text-center py-4">
                                 <i class="fas fa-info-circle mr-2 text-info"></i>
-                                Henüz katılım yapan bulunmuyor.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Katılım Yapmayanlar Bölümü -->
-            <div class="section-title">
-                <div class="icon"><i class="fas fa-user-clock"></i></div>
-                <h3>Katılım Yapmayanlar</h3>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th><i class="fas fa-user mr-2"></i>Ad</th>
-                            <th><i class="fas fa-id-card mr-2"></i>Numara</th>
-                            <th><i class="fas fa-graduation-cap mr-2"></i>Bölüm</th>
-                            <th><i class="fas fa-cog mr-2"></i>İşlemler</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ticket in katilmayanlar %}
-                        <tr>
-                            <td>{{ ticket.name }}</td>
-                            <td>{{ ticket.student_id }}</td>
-                            <td><span class="badge badge-primary">{{ ticket.get_department_display }}</span></td>
-                            <td class="d-flex">
-                                <form method="post" action="{% url 'katilimci_sil' ticket.id %}" class="mr-2">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-danger action-btn" title="Katılımcıyı Sil">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                                <form method="post" action="{% url 'katilimci_katildi' ticket.id %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-success action-btn" title="Katılımı Onayla">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center py-4">
-                                <i class="fas fa-info-circle mr-2 text-info"></i>
-                                Henüz katılmayan kayıt bulunmuyor.
+                                Henüz katılımcı bulunmuyor.
                             </td>
                         </tr>
                         {% endfor %}
@@ -184,9 +190,37 @@
             </p>
         </footer>
     </div>
-    <script src="{% static 'etkinlik/js/slim.min.js' %}"></script>
-    <script src="{% static 'etkinlik/js/popper.min.js' %}"></script>
-    <script src="{% static 'etkinlik/js/bootstrap.min.js' %}"></script>
+
+    <!-- Görevli Öğrenciler için Gizli Buton -->
+    <div class="gorevli-btn">
+        <div class="btn-group">
+            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-cog"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-right">
+                <a class="dropdown-item" href="{% url 'etkinlik_katilim' %}">
+                    <i class="fas fa-file-alt mr-2"></i>Form Sayfası
+                </a>
+                <a class="dropdown-item" href="{% url 'qr_tarayici' %}">
+                    <i class="fas fa-qrcode mr-2"></i>QR Tarayıcı
+                </a>
+                <a class="dropdown-item" href="{% url 'katilimci_listesi' %}">
+                    <i class="fas fa-list mr-2"></i>Katılımcı Listesi
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="{% url 'admin:index' %}">
+                    <i class="fas fa-user-shield mr-2"></i>Yönetici Paneli
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="{% url 'cikis' %}">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Çıkış Yap
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'etkinlik/js/jquery.min.js' %}"></script>
+    <script src="{% static 'etkinlik/js/bootstrap.bundle.min.js' %}"></script>
 </body>
 
 </html>
