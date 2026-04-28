@@ -252,7 +252,7 @@ def csv_indir(request):
     header.append('Toplam')
     writer.writerow(header)
 
-    tickets = Ticket.objects.all().order_by('name')
+    tickets = Ticket.objects.all().order_by('student_id')
     tum_yoklamalar = Yoklama.objects.select_related('ticket').all()
 
     yoklama_durumu = {}
