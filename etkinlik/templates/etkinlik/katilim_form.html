@@ -3,171 +3,606 @@
 <html lang="tr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Etkinlik Katılım Formu</title>
-    <link rel="icon" type="image/x-icon" href="{% static 'etkinlik/img/favicon.ico' %}">
-    <link rel="stylesheet" href="{% static 'etkinlik/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'etkinlik/css/all.min.css' %}">
-    <link rel="stylesheet" href="{% static 'etkinlik/css/katilim_form.css' %}">
-    <style>
-        @font-face {
-            font-family: 'olneylight';
-            font-style: normal;
-            font-weight: normal;
-            font-display: swap;
-            src: url("{% static 'etkinlik/font/olney_light.woff2' %}") format('woff2');
-            src: url("{% static 'etkinlik/font/olney_light.woff' %}") format('woff');
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Etkinlik Katılım</title>
+  <link rel="icon" type="image/x-icon" href="{% static 'etkinlik/img/favicon.ico' %}">
+  <link rel="stylesheet" href="{% static 'etkinlik/css/all.min.css' %}">
+  <script src="{% static 'etkinlik/js/canvas-confetti.min.js' %}"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .btn-sorgula {
-            background-color: #333;
-            border: 1px solid #555;
-            color: white;
-            width: 100%;
-            padding: 0.75rem;
-            font-weight: 600;
-            margin-top: 0.75rem;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
+    @font-face {
+      font-family: 'olneylight';
+      src: url("{% static 'etkinlik/font/olney_light.woff2' %}") format('woff2');
+      src: url("{% static 'etkinlik/font/olney_light.woff' %}") format('woff');
+    }
 
-        .btn-sorgula:hover {
-            background-color: #444;
-            transform: translateY(-2px);
-        }
-    </style>
-    <script src="{% static 'etkinlik/js/jquery.min.js' %}"></script>
-    <script src="{% static 'etkinlik/js/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'etkinlik/js/canvas-confetti.min.js' %}"></script>
+    body {
+      font-family: 'olneylight', sans-serif;
+      background: #0a0a0a url("{% static 'etkinlik/img/topography.svg' %}");
+      color: #fff;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    .page {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 768px) {
+      .page {
+        max-width: 520px;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+        min-height: auto;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid #181818;
+        background: #0e0e0e;
+      }
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #243D8F 0%, #1a2d6b 100%);
+      padding: 2rem 1.5rem;
+      padding-top: max(2rem, env(safe-area-inset-top));
+      text-align: center;
+      position: relative;
+    }
+
+    .header-icon {
+      width: 60px;
+      height: 60px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 1.5rem;
+    }
+
+    .header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .header-sub {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.85rem;
+      margin-top: 0.3rem;
+    }
+
+    /* Content */
+    .content {
+      flex: 1;
+      padding: 1.5rem;
+      padding-bottom: max(5rem, env(safe-area-inset-bottom));
+    }
+
+    /* Form */
+    .form-card {
+      background: #141414;
+      border-radius: 20px;
+      padding: 1.5rem;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-label i {
+      font-size: 0.75rem;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-wrapper input,
+    .input-wrapper select {
+      width: 100%;
+      background: #1e1e1e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      color: #fff;
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+
+    .input-wrapper input::placeholder {
+      color: rgba(255,255,255,0.25);
+    }
+
+    .input-wrapper input:focus,
+    .input-wrapper select:focus {
+      border-color: #243D8F;
+      box-shadow: 0 0 0 3px rgba(36, 61, 143, 0.25);
+    }
+
+    .input-wrapper select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,0.4)' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+    }
+
+    .input-wrapper select option {
+      background: #1e1e1e;
+      color: #fff;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #243D8F 0%, #3b5998 100%);
+      border: none;
+      border-radius: 12px;
+      padding: 1rem;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 0.5rem;
+    }
+
+    .btn-submit:active {
+      transform: scale(0.98);
+    }
+
+    .btn-sorgula {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 0.9rem;
+      color: #fff;
+      font-size: 0.9rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 0.75rem;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .btn-sorgula:hover {
+      background: #2a2a2a;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    /* QR Section */
+    .qr-section {
+      text-align: center;
+      animation: fadeInUp 0.5s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .qr-success-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #0d2920;
+      color: #10b981;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .qr-wrapper {
+      background: #fff;
+      border-radius: 20px;
+      padding: 1.5rem;
+      display: inline-block;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      position: relative;
+    }
+
+    .qr-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #10b981, #243D8F, #10b981);
+      z-index: -1;
+      animation: borderRotate 3s linear infinite;
+    }
+
+    @keyframes borderRotate {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
+
+    .qr-wrapper img {
+      display: block;
+      width: 200px;
+      height: 200px;
+      border-radius: 12px;
+    }
+
+    .qr-info {
+      margin-top: 1.5rem;
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .qr-info-row {
+      display: flex;
+      flex-direction: column;
+      padding: 0.6rem 0;
+    }
+
+    .qr-info-row:not(:last-child) {
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .qr-info-label {
+      color: #666;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.2rem;
+    }
+
+    .qr-info-value {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .qr-hint {
+      color: rgba(255,255,255,0.4);
+      font-size: 0.8rem;
+      margin-top: 1.25rem;
+      line-height: 1.5;
+    }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 0.9rem;
+      color: #fff;
+      font-size: 0.9rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 0.75rem;
+      transition: background 0.2s;
+    }
+
+    .btn-back:hover {
+      background: #2a2a2a;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    /* Menu */
+    .menu-trigger {
+      position: fixed;
+      bottom: max(1.5rem, env(safe-area-inset-bottom));
+      right: 1.5rem;
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .menu-trigger:active {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .menu-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .menu-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .menu-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #1a1a1a;
+      border-radius: 24px 24px 0 0;
+      padding: 1.5rem;
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+      z-index: 101;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .menu-panel.show {
+      transform: translateY(0);
+    }
+
+    .menu-handle {
+      width: 40px;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+
+    .menu-item:hover, .menu-item:active {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .menu-item i {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .menu-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+      margin: 0.5rem 0;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 1rem;
+      color: rgba(255,255,255,0.25);
+      font-size: 0.75rem;
+    }
+
+    .footer a {
+      color: rgba(255,255,255,0.35);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      color: rgba(255,255,255,0.6);
+    }
+  </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-ticket-alt logo-icon"></i>
-                <h3>Etkinlik Katılım Formu</h3>
-            </div>
-            <div class="card-body">
-                {% if not qr_img %}
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-user"></i></span>
-                        </div>
-                        {{ form.name }}
-                    </div>
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                        </div>
-                        {{ form.student_id }}
-                    </div>
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-graduation-cap"></i></span>
-                        </div>
-                        {{ form.department }}
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-submit">Katılım Oluştur</button>
-                </form>
-                <a href="{% url 'ogrenci_sorgulama' %}" class="btn btn-sorgula">
-                    <i class="fas fa-search mr-2"></i>Yoklamalarımı Gör
-                </a>
-                {% endif %}
-
-                {% if qr_img %}
-                <div class="qr-section">
-                    <h4><i class="fas fa-qrcode mr-2"></i>QR Kodunuz</h4>
-                    <div class="qr-img">
-                        <img src="data:image/png;base64,{{ qr_img }}" alt="QR Kod" class="img-fluid">
-                    </div>
-                    <p class="mt-3 text-muted">Bu QR kodu etkinlik oturumlarında yoklama için kullanabilirsiniz</p>
-                    {% if ticket %}
-                    <div style="background-color: #333; border-radius: 8px; padding: 0.75rem; margin-top: 1rem; text-align: center;">
-                        <p style="margin: 0; color: #aaa; font-size: 0.85rem;">Öğrenci No: <strong style="color: white;">{{ ticket.student_id }}</strong></p>
-                    </div>
-                    {% endif %}
-                </div>
-                <a href="{% url 'ogrenci_sorgulama' %}" class="btn btn-sorgula">
-                    <i class="fas fa-search mr-2"></i>Yoklamalarımı Gör
-                </a>
-                <a href="{% url 'etkinlik_katilim' %}" class="btn btn-sorgula" style="margin-top: 0.5rem;">
-                    <i class="fas fa-arrow-left mr-2"></i>Geri Dön
-                </a>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <p class="developer-name">
-                <a href="https://www.linkedin.com/in/aziz-alim/" target="_blank">
-                    <i class="fab fa-linkedin"></i> Made by Mevlana
-                </a>
-            </p>
-        </footer>
+  <div class="page">
+    <div class="header">
+      <div class="header-icon">
+        <i class="fas fa-ticket-alt"></i>
+      </div>
+      <h1>Etkinlik Katılım</h1>
+      <div class="header-sub">QR kodunuzu oluşturun</div>
     </div>
 
-    <!-- Görevli Öğrenciler için Gizli Buton -->
-    <div class="gorevli-btn">
-        {% if user.is_authenticated %}
-        <div class="btn-group">
-            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <i class="fas fa-cog"></i>
-            </button>
-            <div class="dropdown-menu dropdown-menu-right">
-                <a class="dropdown-item" href="{% url 'etkinlik_katilim' %}">
-                    <i class="fas fa-file-alt mr-2"></i>Form Sayfası
-                </a>
-                {% if is_gorevli %}
-                <a class="dropdown-item" href="{% url 'qr_tarayici' %}">
-                    <i class="fas fa-qrcode mr-2"></i>QR Tarayıcı
-                </a>
-                {% endif %}
-                {% if user.is_superuser or user.is_staff %}
-                <a class="dropdown-item" href="{% url 'katilimci_listesi' %}">
-                    <i class="fas fa-list mr-2"></i>Katılımcı Listesi
-                </a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="{% url 'admin:index' %}">
-                    <i class="fas fa-user-shield mr-2"></i>Yönetici Paneli
-                </a>
-                {% endif %}
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="{% url 'cikis' %}">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Çıkış Yap
-                </a>
-            </div>
+    <div class="content">
+      {% if not qr_img %}
+      <form method="post" class="form-card">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-user"></i> Adınız</label>
+          <div class="input-wrapper">
+            {{ form.name }}
+          </div>
         </div>
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-id-card"></i> Öğrenci Numaranız</label>
+          <div class="input-wrapper">
+            {{ form.student_id }}
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-graduation-cap"></i> Bölümünüz</label>
+          <div class="input-wrapper">
+            {{ form.department }}
+          </div>
+        </div>
+        <button type="submit" class="btn-submit">
+          <i class="fas fa-qrcode mr-1"></i> QR Kod Oluştur
+        </button>
+        <a href="{% url 'ogrenci_sorgulama' %}" class="btn-sorgula">
+          <i class="fas fa-search"></i> Yoklamalarımı Gör
+        </a>
+      </form>
+      {% endif %}
+
+      {% if qr_img %}
+      <div class="qr-section">
+        <div class="qr-success-badge">
+          <i class="fas fa-check-circle"></i> QR Kodunuz Hazır
+        </div>
+        <div class="qr-wrapper">
+          <img src="data:image/png;base64,{{ qr_img }}" alt="QR Kod">
+        </div>
+        {% if ticket %}
+        <div class="qr-info">
+          <div class="qr-info-row">
+            <span class="qr-info-label">İsim</span>
+            <span class="qr-info-value">{{ ticket.name }}</span>
+          </div>
+          <div class="qr-info-row">
+            <span class="qr-info-label">Öğrenci No</span>
+            <span class="qr-info-value">{{ ticket.student_id }}</span>
+          </div>
+          <div class="qr-info-row">
+            <span class="qr-info-label">Bölüm</span>
+            <span class="qr-info-value">{{ ticket.get_department_display }}</span>
+          </div>
+        </div>
+        {% endif %}
+        <p class="qr-hint">
+          <i class="fas fa-info-circle mr-1"></i>
+          Bu QR kodu oturum girişlerinde görevliye gösterin. Ekran görüntüsü almayı unutmayın.
+        </p>
+{% if ticket %}
+        <a href="{% url 'ogrenci_sorgulama' %}?student_id={{ ticket.student_id }}" class="btn-sorgula">
+          <i class="fas fa-search"></i> Yoklamalarımı Gör
+        </a>
+        <a href="{% url 'etkinlik_katilim' %}" class="btn-back">
+          <i class="fas fa-arrow-left"></i> Yeni Kayıt
+        </a>
         {% else %}
-        <a href="{% url 'giris' %}" class="btn btn-secondary">
-            <i class="fas fa-sign-in-alt mr-2"></i>Giriş Yap
+        <a href="{% url 'ogrenci_sorgulama' %}" class="btn-sorgula">
+          <i class="fas fa-search"></i> Yoklamalarımı Gör
         </a>
         {% endif %}
+      </div>
+      {% endif %}
     </div>
-</body>
 
-<script>
+    <div class="footer">
+      <a href="https://www.linkedin.com/in/aziz-alim/" target="_blank">
+        <i class="fab fa-linkedin"></i> Made by Mevlana
+      </a>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  {% if user.is_authenticated %}
+  <button class="menu-trigger" onclick="toggleMenu()">
+    <i class="fas fa-bars"></i>
+  </button>
+  <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+  <div class="menu-panel" id="menuPanel">
+    <div class="menu-handle"></div>
+    <a class="menu-item" href="{% url 'etkinlik_katilim' %}">
+      <i class="fas fa-file-alt"></i>
+      <span>Form Sayfası</span>
+    </a>
+    {% if is_gorevli %}
+    <a class="menu-item" href="{% url 'qr_tarayici' %}">
+      <i class="fas fa-qrcode"></i>
+      <span>QR Tarayıcı</span>
+    </a>
+    {% endif %}
+    {% if user.is_superuser or user.is_staff %}
+    <a class="menu-item" href="{% url 'katilimci_listesi' %}">
+      <i class="fas fa-list"></i>
+      <span>Katılımcı Listesi</span>
+    </a>
+    <div class="menu-divider"></div>
+    <a class="menu-item" href="{% url 'admin:index' %}">
+      <i class="fas fa-user-shield"></i>
+      <span>Yönetici Paneli</span>
+    </a>
+    {% endif %}
+    <div class="menu-divider"></div>
+    <a class="menu-item" href="{% url 'cikis' %}" style="color: #ef4444;">
+      <i class="fas fa-sign-out-alt" style="background: rgba(239,68,68,0.15); color: #ef4444;"></i>
+      <span>Çıkış Yap</span>
+    </a>
+  </div>
+  {% else %}
+  <a href="{% url 'giris' %}" class="menu-trigger" style="text-decoration: none;">
+    <i class="fas fa-sign-in-alt"></i>
+  </a>
+  {% endif %}
+
+  <script>
+    function toggleMenu() {
+      const overlay = document.getElementById('menuOverlay');
+      const panel = document.getElementById('menuPanel');
+      if (panel.classList.contains('show')) {
+        panel.classList.remove('show');
+        setTimeout(() => overlay.classList.remove('show'), 300);
+      } else {
+        overlay.classList.add('show');
+        setTimeout(() => panel.classList.add('show'), 10);
+      }
+    }
+
     {% if qr_img %}
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999 };
 
     function randomInRange(min, max) {
-        return Math.random() * (max - min) + min;
+      return Math.random() * (max - min) + min;
     }
 
     const interval = setInterval(function() {
-        const timeLeft = animationEnd - Date.now();
-        if (timeLeft <= 0) return clearInterval(interval);
-        const particleCount = 50 * (timeLeft / duration);
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+      const timeLeft = animationEnd - Date.now();
+      if (timeLeft <= 0) return clearInterval(interval);
+      const particleCount = 50 * (timeLeft / duration);
+      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
     }, 250);
     {% endif %}
-</script>
+  </script>
+</body>
 
 </html>

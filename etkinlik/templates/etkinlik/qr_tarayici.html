@@ -4,118 +4,513 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>QR Kod Tarayıcı</title>
   <link rel="icon" type="image/x-icon" href="{% static 'etkinlik/img/favicon.ico' %}">
   <script src="{% static 'etkinlik/js/qr.min.js' %}"></script>
-  <link rel="stylesheet" href="{% static 'etkinlik/css/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'etkinlik/css/all.min.css' %}">
-  <link rel="stylesheet" href="{% static 'etkinlik/css/qr_tarayici.css' %}">
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     @font-face {
       font-family: 'olneylight';
-      font-style: normal;
-      font-weight: normal;
-      font-display: swap;
       src: url("{% static 'etkinlik/font/olney_light.woff2' %}") format('woff2');
       src: url("{% static 'etkinlik/font/olney_light.woff' %}") format('woff');
     }
 
-    .aktif-oturum-badge {
-      background-color: #243D8F;
-      color: white;
-      padding: 0.75rem 1.5rem;
-      border-radius: 10px;
-      text-align: center;
-      margin-bottom: 1.5rem;
+    body {
+      font-family: 'olneylight', sans-serif;
+      background: #000;
+      color: #fff;
+      height: 100dvh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #reader {
+      width: 100vw;
+      height: 100dvh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    #reader video {
+      object-fit: cover !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    #reader img[alt="Info icon"],
+    #reader div[style*="border"] {
+      display: none !important;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100dvh;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .top-bar {
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+      padding: 1rem 1.2rem;
+      padding-top: max(1rem, env(safe-area-inset-top));
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: auto;
+    }
+
+    .oturum-badge {
+      background: rgba(36, 61, 143, 0.9);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
       font-weight: 600;
-      box-shadow: 0 3px 10px rgba(36, 61, 143, 0.4);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    .aktif-oturum-badge .badge-label {
-      font-size: 0.75rem;
-      color: rgba(255,255,255,0.7);
-      margin-bottom: 0.25rem;
+    .oturum-badge .dot {
+      width: 8px;
+      height: 8px;
+      background: #4ade80;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
     }
 
-    .aktif-oturum-badge .badge-value {
-      font-size: 1.2rem;
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .menu-btn {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1rem;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+    }
+
+    .scan-frame {
+      width: 260px;
+      height: 260px;
+      margin: auto;
+      position: relative;
+    }
+
+    .scan-frame::before,
+    .scan-frame::after,
+    .scan-frame .corner-bl,
+    .scan-frame .corner-br {
+      content: '';
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-color: #4ade80;
+      border-style: solid;
+      border-width: 0;
+    }
+
+    .scan-frame::before { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
+    .scan-frame::after { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
+    .scan-frame .corner-bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
+    .scan-frame .corner-br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
+
+    .scan-line {
+      display: none;
+    }
+
+    .bottom-bar {
+      background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+      padding: 1.5rem;
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+      text-align: center;
+      pointer-events: auto;
+    }
+
+    .hint-text {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.85rem;
+    }
+
+    /* Bildirim Overlay */
+    .notification-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100dvh;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .notification-overlay.show {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .notification-overlay.success { background: rgba(16, 185, 129, 0.25); }
+    .notification-overlay.error { background: rgba(239, 68, 68, 0.25); }
+    .notification-overlay.warning { background: rgba(245, 158, 11, 0.25); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .notification-card {
+      background: #1a1a1a;
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      max-width: 340px;
+      width: 100%;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+      animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    .notif-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: rgba(255,255,255,0.5);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .notif-close:hover {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .notification-card .icon-wrapper {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2.5rem;
+    }
+
+    .notification-card.success .icon-wrapper {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+    }
+
+    .notification-card.error .icon-wrapper {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+    }
+
+    .notification-card.warning .icon-wrapper {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
+    }
+
+    .notification-card .status-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .notification-card .owner-info {
+      color: rgba(255,255,255,0.6);
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .notification-card .timer-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .notification-card .timer-bar .fill {
+      height: 100%;
+      border-radius: 2px;
+      animation: timerDrain 3s linear forwards;
+    }
+
+    .notification-card.success .timer-bar .fill { background: #10b981; }
+    .notification-card.error .timer-bar .fill { background: #ef4444; }
+    .notification-card.warning .timer-bar .fill { background: #f59e0b; }
+
+    @keyframes timerDrain {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+
+    /* Menü */
+    .menu-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100dvh;
+      z-index: 200;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .menu-overlay.show {
+      display: block;
+      opacity: 1;
+    }
+
+    .menu-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #1a1a1a;
+      border-radius: 24px 24px 0 0;
+      padding: 1.5rem;
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+      z-index: 201;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .menu-panel.show {
+      transform: translateY(0);
+    }
+
+    .menu-handle {
+      width: 40px;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+
+    .menu-item:hover, .menu-item:active {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .menu-item i {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .menu-item span { font-size: 0.95rem; }
+
+    .menu-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+      margin: 0.5rem 0;
+    }
+
+    /* html5-qrcode gizle */
+    #reader__dashboard_section,
+    #reader__dashboard_section_csr,
+    #reader__header_message,
+    img[src*="info"],
+    div[style*="border: 1px solid rgb(180, 180, 180)"] {
+      display: none !important;
+    }
+
+    #reader__scan_region {
+      min-height: 100dvh !important;
+    }
+
+    #reader__scan_region > br {
+      display: none !important;
     }
   </style>
 </head>
 
 <body>
-  <div class="app-container">
-    <div class="app-header">
-      <i class="fas fa-qrcode mb-2" style="font-size: 2.5rem;"></i>
-      <h2>QR Kod Tarayıcı</h2>
+  <div id="reader"></div>
+
+  <div class="overlay">
+    <div class="top-bar">
+      <div class="oturum-badge">
+        <span class="dot"></span>
+        <span>{{ aktif_oturum_adi }}</span>
+      </div>
+      <button class="menu-btn" onclick="toggleMenu()">
+        <i class="fas fa-bars"></i>
+      </button>
     </div>
-    <div class="scanner-container">
-      <div class="aktif-oturum-badge">
-        <div class="badge-label"><i class="fas fa-calendar-check mr-1"></i>Aktif Oturum</div>
-        <div class="badge-value">{{ aktif_oturum_adi }}</div>
-      </div>
 
-      <div id="reader"></div>
+    <div class="scan-frame">
+      <div class="scan-line"></div>
+      <div class="corner-bl" style="position:absolute;width:30px;height:30px;bottom:0;left:0;border-bottom:3px solid #4ade80;border-left:3px solid #4ade80;border-radius:0 0 0 4px;"></div>
+      <div class="corner-br" style="position:absolute;width:30px;height:30px;bottom:0;right:0;border-bottom:3px solid #4ade80;border-right:3px solid #4ade80;border-radius:0 0 4px 0;"></div>
+    </div>
 
-      <div id="status-display" class="status-container" style="display: none;">
-        <div id="status-icon-success" class="icon-container" style="display: none;">
-          <i class="fas fa-check-circle status-icon success-icon"></i>
-        </div>
-        <div id="status-icon-error" class="icon-container" style="display: none;">
-          <i class="fas fa-times-circle status-icon error-icon"></i>
-        </div>
-        <div id="status" class="status-text"></div>
-        <div id="owner" class="owner-text"></div>
-      </div>
+    <div class="bottom-bar">
+      <p class="hint-text"><i class="fas fa-qrcode mr-1"></i>QR kodu çerçeve içine getirin</p>
     </div>
   </div>
 
-  <!-- Görevli Öğrenciler için Gizli Buton -->
-  <div class="gorevli-btn">
-    <div class="btn-group">
-      <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        <i class="fas fa-cog"></i>
-      </button>
-      <div class="dropdown-menu dropdown-menu-right">
-        <a class="dropdown-item" href="{% url 'etkinlik_katilim' %}">
-          <i class="fas fa-file-alt mr-2"></i>Form Sayfası
-        </a>
-        <a class="dropdown-item" href="{% url 'qr_tarayici' %}">
-          <i class="fas fa-qrcode mr-2"></i>QR Tarayıcı
-        </a>
-        {% if user.is_superuser or user.is_staff %}
-        <a class="dropdown-item" href="{% url 'katilimci_listesi' %}">
-          <i class="fas fa-list mr-2"></i>Katılımcı Listesi
-        </a>
-        <div class="dropdown-divider"></div>
-        <a class="dropdown-item" href="{% url 'admin:index' %}">
-          <i class="fas fa-user-shield mr-2"></i>Yönetici Paneli
-        </a>
-        {% endif %}
-        <div class="dropdown-divider"></div>
-        <a class="dropdown-item" href="{% url 'cikis' %}">
-          <i class="fas fa-sign-out-alt mr-2"></i>Çıkış Yap
-        </a>
+  <!-- Bildirim Overlay -->
+  <div class="notification-overlay" id="notification" onclick="closeNotification()">
+    <div class="notification-card" id="notificationCard" onclick="event.stopPropagation()">
+      <button class="notif-close" onclick="closeNotification()"><i class="fas fa-times"></i></button>
+      <div class="icon-wrapper">
+        <i id="notifIcon" class="fas fa-check-circle"></i>
       </div>
+      <div class="status-title" id="notifTitle"></div>
+      <div class="owner-info" id="notifOwner"></div>
+      <div class="timer-bar"><div class="fill" id="notifTimer"></div></div>
     </div>
+  </div>
+
+  <!-- Menü -->
+  <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+  <div class="menu-panel" id="menuPanel">
+    <div class="menu-handle"></div>
+    <a class="menu-item" href="javascript:void(0)" onclick="switchCamera()">
+      <i class="fas fa-sync-alt"></i>
+      <span>Kamera Değiştir</span>
+    </a>
+    <div class="menu-divider"></div>
+    <a class="menu-item" href="{% url 'etkinlik_katilim' %}">
+      <i class="fas fa-file-alt"></i>
+      <span>Form Sayfası</span>
+    </a>
+    <a class="menu-item" href="{% url 'qr_tarayici' %}">
+      <i class="fas fa-qrcode"></i>
+      <span>QR Tarayıcı</span>
+    </a>
+    {% if user.is_superuser or user.is_staff %}
+    <a class="menu-item" href="{% url 'katilimci_listesi' %}">
+      <i class="fas fa-list"></i>
+      <span>Katılımcı Listesi</span>
+    </a>
+    <div class="menu-divider"></div>
+    <a class="menu-item" href="{% url 'admin:index' %}">
+      <i class="fas fa-user-shield"></i>
+      <span>Yönetici Paneli</span>
+    </a>
+    {% endif %}
+    <div class="menu-divider"></div>
+    <a class="menu-item" href="{% url 'cikis' %}" style="color: #ef4444;">
+      <i class="fas fa-sign-out-alt" style="background: rgba(239,68,68,0.15); color: #ef4444;"></i>
+      <span>Çıkış Yap</span>
+    </a>
   </div>
 
   <script>
     let html5QrCode;
     let selectedOturum = {{ aktif_oturum }};
-    let isScannerRunning = false;
     let scanCooldown = false;
+    let currentCamera = 'environment';
+    let notifTimer = null;
+
+    function closeNotification() {
+      const overlay = document.getElementById('notification');
+      overlay.classList.remove('show');
+      scanCooldown = false;
+      if (notifTimer) { clearTimeout(notifTimer); notifTimer = null; }
+    }
+
+    function showNotification(type, title, owner) {
+      const overlay = document.getElementById('notification');
+      const card = document.getElementById('notificationCard');
+      const icon = document.getElementById('notifIcon');
+      const timer = document.getElementById('notifTimer');
+
+      if (notifTimer) clearTimeout(notifTimer);
+
+      overlay.className = 'notification-overlay show ' + type;
+      card.className = 'notification-card ' + type;
+      document.getElementById('notifTitle').innerText = title;
+      document.getElementById('notifOwner').innerText = owner || '';
+
+      if (type === 'success') {
+        icon.className = 'fas fa-check-circle';
+      } else if (type === 'warning') {
+        icon.className = 'fas fa-exclamation-triangle';
+      } else {
+        icon.className = 'fas fa-times-circle';
+      }
+
+      timer.style.animation = 'none';
+      timer.offsetHeight;
+      timer.style.animation = 'timerDrain 3s linear forwards';
+
+      if (navigator.vibrate) {
+        if (type === 'success') navigator.vibrate([100, 50, 100]);
+        else if (type === 'warning') navigator.vibrate(200);
+        else navigator.vibrate([50, 30, 50, 30, 50]);
+      }
+
+      notifTimer = setTimeout(() => {
+        overlay.classList.remove('show');
+        scanCooldown = false;
+        notifTimer = null;
+      }, 3000);
+    }
 
     function onScanSuccess(decodedText) {
       if (scanCooldown) return;
       scanCooldown = true;
-
-      document.getElementById("status-display").style.display = "block";
-      document.getElementById("status-icon-success").style.display = "none";
-      document.getElementById("status-icon-error").style.display = "none";
-      document.getElementById("status").innerText = "İşleniyor...";
-      document.getElementById("owner").innerText = "";
 
       fetch("/etkinlik/qr-onayla/", {
         method: "POST",
@@ -125,67 +520,71 @@
         },
         body: JSON.stringify({ qr_data: decodedText, oturum: selectedOturum })
       })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
           if (data.status === 'success') {
-            document.getElementById("status-icon-success").style.display = "block";
-            document.getElementById("status").innerText = data.message;
-            document.getElementById("owner").innerText = data.owner;
+            showNotification('success', data.message, data.owner);
           } else {
-            document.getElementById("status-icon-error").style.display = "block";
-            document.getElementById("status").innerText = data.message;
-            if (data.owner) document.getElementById("owner").innerText = data.owner;
+            const isAlready = data.message.includes('zaten');
+            showNotification(isAlready ? 'warning' : 'error', data.message, data.owner || '');
           }
-
-          setTimeout(() => {
-            scanCooldown = false;
-            document.getElementById("status-display").style.display = "none";
-          }, 3000);
         })
-        .catch(error => {
-          console.error("Hata:", error);
-          document.getElementById("status-icon-error").style.display = "block";
-          document.getElementById("status").innerText = "Bağlantı Hatası";
-          setTimeout(() => {
-            scanCooldown = false;
-            document.getElementById("status-display").style.display = "none";
-          }, 3000);
+        .catch(() => {
+          showNotification('error', 'Bağlantı Hatası', 'Sunucuya ulaşılamıyor');
         });
     }
 
-    function onScanFailure(error) {}
+    function onScanFailure() {}
 
-    function startCamera() {
+    function startCamera(camera) {
+      const facing = camera || currentCamera;
+      const constraints = facing === 'environment'
+        ? { facingMode: { exact: "environment" } }
+        : { facingMode: "user" };
+
       html5QrCode.start(
-        { facingMode: { exact: "environment" } },
-        { fps: 10, qrbox: 250 },
+        constraints,
+        { fps: 10, qrbox: { width: 250, height: 250 } },
         onScanSuccess,
         onScanFailure
-      ).then(() => {
-        isScannerRunning = true;
-      }).catch(() => {
+      ).catch(() => {
         html5QrCode.start(
-          { facingMode: "user" },
-          { fps: 10, qrbox: 250 },
+          { facingMode: facing },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
           onScanSuccess,
           onScanFailure
-        ).then(() => {
-          isScannerRunning = true;
-        }).catch(() => {
-          document.getElementById("status-display").style.display = "block";
-          document.getElementById("status-icon-error").style.display = "block";
-          document.getElementById("status").innerText = "Kamera Erişimi Hatası";
-          document.getElementById("owner").innerText = "Lütfen kamera izinlerini kontrol edin ve sayfayı yenileyin.";
-          document.getElementById("reader").style.display = "none";
+        ).catch(() => {
+          showNotification('error', 'Kamera Erişilemedi', 'İzinleri kontrol edin');
         });
       });
+    }
+
+    function switchCamera() {
+      toggleMenu();
+      html5QrCode.stop().then(() => {
+        currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+        startCamera();
+      }).catch(() => {
+        currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+        startCamera();
+      });
+    }
+
+    function toggleMenu() {
+      const overlay = document.getElementById('menuOverlay');
+      const panel = document.getElementById('menuPanel');
+      if (panel.classList.contains('show')) {
+        panel.classList.remove('show');
+        setTimeout(() => overlay.classList.remove('show'), 300);
+      } else {
+        overlay.classList.add('show');
+        setTimeout(() => panel.classList.add('show'), 10);
+      }
     }
 
     html5QrCode = new Html5Qrcode("reader");
     startCamera();
   </script>
-  <script src="{% static 'etkinlik/js/jquery.min.js' %}"></script>
-  <script src="{% static 'etkinlik/js/bootstrap.bundle.min.js' %}"></script>
 </body>
 
 </html>

@@ -98,21 +98,14 @@ def etkinlik_katilim(request):
         form = KatilimForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            try:
-                ticket = Ticket.objects.get(
-                    name=data['name'],
-                    student_id=data['student_id'],
-                    department=data['department']
-                )
-                qr_img = generate_qr_image(ticket.qr_code)
-            except Ticket.DoesNotExist:
-                ticket = Ticket(
-                    name=data['name'],
-                    student_id=data['student_id'],
-                    department=data['department']
-                )
-                ticket.save()
-                qr_img = generate_qr_image(ticket.qr_code)
+            ticket, created = Ticket.objects.get_or_create(
+                student_id=data['student_id'],
+                defaults={
+                    'name': data['name'],
+                    'department': data['department'],
+                }
+            )
+            qr_img = generate_qr_image(ticket.qr_code)
     else:
         form = KatilimForm()
 
@@ -133,29 +126,32 @@ def ogrenci_sorgulama(request):
     hata = None
     qr_img = None
 
+    student_id = ''
     if request.method == "POST":
         student_id = request.POST.get('student_id', '').strip()
-        if student_id:
-            try:
-                ticket = Ticket.objects.get(student_id=student_id)
-                qr_img = generate_qr_image(ticket.qr_code)
-                katildigi = ticket.katildigi_oturumlar()
-                for oturum_no, oturum_adi in OTURUM_ISIMLERI.items():
-                    yoklamalar.append({
-                        'oturum_no': oturum_no,
-                        'oturum_adi': oturum_adi,
-                        'katildi': oturum_no in katildigi,
-                    })
-            except Ticket.DoesNotExist:
-                hata = 'Bu öğrenci numarasına ait kayıt bulunamadı.'
-        else:
-            hata = 'Lütfen öğrenci numaranızı girin.'
+    else:
+        student_id = request.GET.get('student_id', '').strip()
+
+    if student_id:
+        try:
+            ticket = Ticket.objects.get(student_id=student_id)
+            qr_img = generate_qr_image(ticket.qr_code)
+            katildigi = ticket.katildigi_oturumlar()
+            for oturum_no, oturum_adi in OTURUM_ISIMLERI.items():
+                yoklamalar.append({
+                    'oturum_no': oturum_no,
+                    'oturum_adi': oturum_adi,
+                    'katildi': oturum_no in katildigi,
+                })
+        except Ticket.DoesNotExist:
+            hata = 'Bu öğrenci numarasına ait kayıt bulunamadı.'
 
     return render(request, "etkinlik/ogrenci_sorgulama.html", {
         "ticket": ticket,
         "yoklamalar": yoklamalar,
         "hata": hata,
         "qr_img": qr_img,
+        "student_id": student_id,
     })
 
 
